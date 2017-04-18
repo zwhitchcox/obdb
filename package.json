@@ -1,0 +1,19 @@
+{
+  "name": "obdb",
+  "version": "0.0.1",
+  "description": "Observable Database written in JavaScript, compatible with TypeScript and Flow",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zwhitchcox/obdb.git"
+  },
+  "author": "zwhitchcox",
+  "license": "Copyright (c) 2015 Mark Nadal",
+  "bugs": {
+    "url": "https://github.com/zwhitchcox/obdb/issues"
+  },
+  "homepage": "https://github.com/zwhitchcox/obdb#readme"
+}
