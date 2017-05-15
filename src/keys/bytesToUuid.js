@@ -1,5 +1,6 @@
 type bthType = string[]
 const byteToHex: bthType = []
+debugger
 for (let i: number = 0; i < 256; ++i) {
   byteToHex[i] = (i + 0x100).toString(16).substr(1)
 }

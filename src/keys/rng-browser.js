@@ -1,4 +1,4 @@
-let rng;
+export let rng;
 import { KEY_SIZE } from '../constants'
 
 const crypto = global.crypto || global.msCrypto
@@ -22,4 +22,3 @@ if (!rng) {
   }
 }
 
-export rng
