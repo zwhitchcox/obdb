@@ -1,6 +1,7 @@
 /* @flow */
 export function isPrimitive(val: any) {
-  return typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean'
+  return typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean' ||
+    val === null || val === undefined
 }
 
 export function isPlainObject(value: any) {

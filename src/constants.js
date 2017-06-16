@@ -1,1 +1,1 @@
-export const KEY_SIZE = 8
+export let KEY_SIZE = 8

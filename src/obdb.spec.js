@@ -1,23 +1,39 @@
-import { Obdb } from './obdb'
-import { getId } from './global'
+import {
+  set,
+  startObservation,
+  getObserved,
+  endObservation,
+  keys,
+  observed,
+} from './obdb'
 import * as expect from 'expect'
+import io from 'socket.io-client'
+var socket = io('http://localhost:8080');
 
-it('should set and get value for property', () => {
-  const obdb = new Obdb
-  obdb.set('x', 'y')
-  expect(obdb.get('x')).toEqual('y')
+it('should set and get properties', () => {
+  const obj = {}
+  set(obj, 'hello', 'hi')
+  expect(obj.hello).toEqual('hi')
 })
 
-it('should set and get nested value for property', () => {
-  const obdb = new Obdb
-  obdb.set(['x', 'y'], 'z')
-  expect(obdb.get(['x', 'y'])).toEqual('z')
-  expect(obdb.data.x.y).toEqual('z')
+it('should correctly identify observed properties primitives', () => {
+  const obj = {}
+  ;['hi', null, true, undefined, 3]
+    .forEach((prim, i) => {
+      startObservation()
+      set(obj, ''+i, prim)
+      expect(obj[''+i]).toEqual(prim)
+      endObservation()
+      expect(keys[getObserved()[0]]).toEqual(prim)
+    })
 })
 
-it('should set and get nested value for property', () => {
-  const obdb = new Obdb
-  obdb.set(['x', 'y'], 'z')
-  expect(obdb.get(['x', 'y'])).toEqual('z')
-  expect(obdb.data.x.y).toEqual('z')
+it('should communicate with the server', done => {
+  socket.on('update', update);
+  function update (data) {
+    console.log('hello')
+    expect(data).toEqual({ hello: 'suck it' })
+    socket.removeListener('update', update)
+    done()
+  }
 })

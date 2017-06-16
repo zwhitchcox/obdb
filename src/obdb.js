@@ -1,57 +1,58 @@
-import { getId } from './global'
 import { getKey } from './keys'
-import type { TPath } from './path'
-type ISoul = {| '#': string |}
-type TDatum = string | number | boolean | ISoul
-export type IData = {
-  [key: string]: TDatum
-}
-interface IObdbOptions {
-  peers?: string[] | string,
-  startData?: {[key: string]: string},
-  file?: string,
+import { isPrimitive, isPlainObject } from './util'
+
+export function set(obj, key, val) {
+  if (vals.has(obj[key]))
+    return obj[key] = val
+
+  const lookupKey = getKey()
+  let underlyingVal;
+  Object.defineProperty(obj, key, {
+    set(val) {
+      if (vals.has(val)) {
+        return underlyingVal = val
+      }
+      return underlyingVal = parse(val, lookupKey)
+    },
+    get() {
+      observed[lookupKey] = true
+      return underlyingVal
+    },
+    enumerable: true,
+    configurable: false,
+  })
+  obj[key] = val
 }
 
-// data: IData = {}
-export class Obdb {
-  data: IData = {}
-  map = new WeakMap
+export function startObservation() {
+  observing = true
   observed = {}
-  changed = {}
-  constructor(start: IData = {}) {
-    this.data = {}
-  }
-
-  set(path: TPath, val: any) {
-    return []
-      .concat(path)
-      .slice(0, path.length - 1)
-      .reduce((prev, cur) => prev[cur] || this.create(prev, cur), this.data)
-        [path[path.length - 1]] = val
-  }
-
-  get(path: TPath) {
-    return []
-      .concat(path)
-      .reduce((prev, cur) => prev[cur] || this.create(prev, cur)), this.data)
-  }
-
-  create(path) {
-    const key = getKey()
-    Object.defineProperty(parent, path, {
-      set = (newVal) => {
-        this.changed[key] = true
-        this.data[key] = newVal
-      },
-
-      get => () {
-        this.observed[key] = true
-      },
-
-      enumerable: true,
-      configurable: true,
-    })
-    this.map.set(parent[path], key)
-    return parent[path]
-  }
 }
+
+export function getObserved() {
+  return Object.keys(observed)
+}
+
+export function endObservation() {
+  observing = false
+}
+
+export function parse(val, lookupKey) {
+  if (isPrimitive(val)) {
+  } else if (isPlainObject(val)) {
+    for (const key in val) {
+      set(val, key, val[key])
+    }
+    vals.set(val, key)
+  } else {
+    throw new Error('sorry, we don\'t support that data type just yet :(')
+  }
+
+  keys[lookupKey] = val
+  return val
+}
+
+export let observing = false
+export let observed = {}
+export let keys = {}
+export let vals = new WeakMap
