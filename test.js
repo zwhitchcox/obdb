@@ -95,31 +95,17 @@ const Html = require('html-webpack-plugin')
 const Fail = require('webpack-fail-plugin')
 const sync = require('glob').sync
 const webpackDevServer = require('webpack-dev-server')
-const mochaConfig = {
-  entry: './test.server.js',
-  output: {
-    filename: 'dist/[name].js',
-  },
-  module: {
-    rules: [
-      {
-        test: /.js$/,
-        use: 'babel-loader',
-        exclude: /node_modules/
-      },
-    ]
-  },
-  plugins: [
-    new Html(),
-    Fail,
-    new webpack.BannerPlugin({
-      banner: 'require("source-map-support").install();',
-      raw: true,
-      entryOnly: false,
-      include: './src/{**/*,*}.spec.js'
-    }),
-  ],
-}
+const mochaConfig = require('./webpack.config.js')
+mochaConfig.plugins = [
+  new Html(),
+  Fail,
+  new webpack.BannerPlugin({
+    banner: 'require("source-map-support").install();',
+    raw: true,
+    entryOnly: false,
+    include: './src/{**/*,*}.spec.js'
+  }),
+],
 mochaConfig.entry = sync('./src/{**/*,*}.spec.js')
 mochaConfig.module.rules.push({
   test: /.spec.js$/,
