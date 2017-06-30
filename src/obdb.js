@@ -1,58 +1,43 @@
-import { getKey } from './keys'
-import { isPrimitive, isPlainObject } from './util'
+import io from 'socket.io-client'
+import uuid from 'uuid/v5'
 
-export function set(obj, key, val) {
-  if (vals.has(obj[key]))
-    return obj[key] = val
-
-  const lookupKey = getKey()
-  let underlyingVal;
-  Object.defineProperty(obj, key, {
-    set(val) {
-      if (vals.has(val)) {
-        return underlyingVal = val
-      }
-      return underlyingVal = parse(val, lookupKey)
-    },
-    get() {
-      observed[lookupKey] = true
-      return underlyingVal
-    },
-    enumerable: true,
-    configurable: false,
-  })
-  obj[key] = val
-}
-
-export function startObservation() {
-  observing = true
-  observed = {}
-}
-
-export function getObserved() {
-  return Object.keys(observed)
-}
-
-export function endObservation() {
-  observing = false
-}
-
-export function parse(val, lookupKey) {
-  if (isPrimitive(val)) {
-  } else if (isPlainObject(val)) {
-    for (const key in val) {
-      set(val, key, val[key])
-    }
-    vals.set(val, key)
-  } else {
-    throw new Error('sorry, we don\'t support that data type just yet :(')
+const callbacks = {}
+export default class Obdb {
+  data = {}
+  constructor(peers = []) {
+    peers = [].concat(peers)
+    this.connections = peers.map(createConnection)
+    this.connections.forEach(conn => {
+      conn.on('update', ({k, d}) => {
+        this.data[k] = d
+      })
+      conn.on('saved', key => {
+        callbacks[key]()
+        delete callbacks[key]
+      })
+    })
   }
 
-  keys[lookupKey] = val
-  return val
+  update(o, cb) {
+    for (key in o) {
+      this.data[key] = obj[key]
+    }
+    const k = uuid()
+    this.connections.forEach(conn => {
+      callbacks[k] = cb
+      conn.emit('update', {o, k})
+    })
+  }
+
+  replace(obj) {
+    this.data = Object.assign({}, obj)
+    const k = uuid()
+    this.connections.forEach(conn =>
+      conn.emit('replace', {o, k})
+    )
+  }
 }
 
-export let observing = false
-export let observed = {}
-export let keys = {}
-export let vals = new WeakMap
+export function createConnection(peer) {
+  return io(peer)
+}

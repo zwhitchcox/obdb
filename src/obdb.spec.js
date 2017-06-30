@@ -1,39 +1,23 @@
-import {
-  set,
-  startObservation,
-  getObserved,
-  endObservation,
-  keys,
-  observed,
-} from './obdb'
+import Obdb from './obdb'
 import * as expect from 'expect'
-import io from 'socket.io-client'
-var socket = io('http://localhost:8080');
+const obdb1 = new Obdb(window.location.href, { path: '/obdb' })
+const obdb2 = new Obdb(window.location.href, { path: '/obdb' })
 
 it('should set and get properties', () => {
-  const obj = {}
-  set(obj, 'hello', 'hi')
-  expect(obj.hello).toEqual('hi')
+  obdb1.update({hello: 'hi'})
+  expect(obdb1.data.hello).toEqual('hi')
 })
 
-it('should correctly identify observed properties primitives', () => {
-  const obj = {}
-  ;['hi', null, true, undefined, 3]
-    .forEach((prim, i) => {
-      startObservation()
-      set(obj, ''+i, prim)
-      expect(obj[''+i]).toEqual(prim)
-      endObservation()
-      expect(keys[getObserved()[0]]).toEqual(prim)
-    })
+it.only('should emit saved and callback', done => {
+  throw new Error('hello')
+  obdb1.update({hello: 'hi'}, done)
+})
+
+it('should update the server', (done) => {
+  setTimeout(()=>(expect(obdb2.data.hello).toEqual('hi'), done()), 100)
+  
 })
 
 it('should communicate with the server', done => {
-  socket.on('update', update);
-  function update (data) {
-    console.log('hello')
-    expect(data).toEqual({ hello: 'suck it' })
-    socket.removeListener('update', update)
-    done()
-  }
+  done()
 })

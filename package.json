@@ -40,6 +40,8 @@
     "rimraf": "^2.6.1",
     "source-map-loader": "^0.2.1",
     "ts-node": "^3.0.2",
+    "utf8": "^2.1.2",
+    "webpack": "^3.0.0",
     "webpack-dev-middleware": "^1.10.2",
     "webpack-dev-server": "^2.4.5",
     "webpack-fail-plugin": "^1.0.6",
