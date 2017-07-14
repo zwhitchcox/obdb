@@ -1,9 +1,11 @@
-import {
-  aur,
-  mkob,
-} from './obdb'
+import Obdb from './obdb'
 import * as expect from 'expect'
 import sinon from 'sinon'
+const obdb = new Obdb
+const {
+  mkob,
+  aur,
+} = obdb;
 
 it('should work with observers', () => {
   const ob = { hello: 'hi' }
