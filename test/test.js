@@ -6,7 +6,7 @@ const nodeExternals = require('webpack-node-externals')
 const rimraf = require('rimraf')
 
 const config = {
-  entry: './test.server.js',
+  entry: __dirname + '/test.server.js',
   devtool: 'source-map',
   target: 'node',
   output: {
@@ -46,7 +46,7 @@ const config = {
 const compiler = webpack(config)
 let server
 let pending = true
-const serverPath = `${__dirname}/${config.output.filename}`
+const serverPath = process.cwd() + '/' + config.output.filename
 compiler.watch({}, runServer)
 
 
@@ -95,23 +95,25 @@ const Html = require('html-webpack-plugin')
 const Fail = require('webpack-fail-plugin')
 const sync = require('glob').sync
 const webpackDevServer = require('webpack-dev-server')
-const mochaConfig = require('./webpack.config.js')
+const mochaConfig = require('../webpack.config.js')
 mochaConfig.plugins = [
   new Html(),
   Fail,
-  new webpack.BannerPlugin({
-    banner: 'require("source-map-support").install();',
-    raw: true,
-    entryOnly: false,
-    include: './src/{**/*,*}.spec.js'
-  }),
-],
+]
+mochaConfig.devtool='source-map'
 mochaConfig.entry = sync('./src/{**/*,*}.spec.js')
-mochaConfig.module.rules.push({
-  test: /.spec.js$/,
-  use: 'mocha-loader',
-  exclude: /node_modules/
-})
+mochaConfig.module.rules.push(
+  {
+    test: /.spec.js$/,
+    use: './test/my-source-map-loader',
+    exclude: /node_modules/
+  },
+  {
+    test: /.spec.js$/,
+    use: 'mocha-loader',
+    exclude: /node_modules/
+  }
+)
 const mochaCompiler = webpack(mochaConfig)
 const mochaServer = new webpackDevServer(mochaCompiler, {})
 mochaServer.listen(8089)

@@ -1,23 +1,22 @@
-import Obdb from './obdb'
+import {
+  aur,
+  mkob,
+} from './obdb'
 import * as expect from 'expect'
-const obdb1 = new Obdb(window.location.href, { path: '/obdb' })
-const obdb2 = new Obdb(window.location.href, { path: '/obdb' })
+import sinon from 'sinon'
 
-it('should set and get properties', () => {
-  obdb1.update({hello: 'hi'})
-  expect(obdb1.data.hello).toEqual('hi')
+it('should work with observers', () => {
+  const ob = { hello: 'hi' }
+  let x;
+  mkob(ob)
+  const destroyerOfWorlds = aur(() => x = ob.hello)
+  expect(x).toBe('hi')
+  ob.hello = 'no'
+  expect(x).toBe('no')
+  destroyerOfWorlds()
+  ob.hello = 'yes'
+  expect(x).toBe('no')
 })
 
-it.only('should emit saved and callback', done => {
-  throw new Error('hello')
-  obdb1.update({hello: 'hi'}, done)
-})
-
-it('should update the server', (done) => {
-  setTimeout(()=>(expect(obdb2.data.hello).toEqual('hi'), done()), 100)
-  
-})
-
-it('should communicate with the server', done => {
-  done()
+it('should mirror on database', () => {
 })

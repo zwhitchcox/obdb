@@ -4,7 +4,7 @@
   "description": "reserving name",
   "main": "index.js",
   "scripts": {
-    "test": "node test",
+    "test": "node ./test/test",
     "test:watch": "npm run test -- --watch"
   },
   "repository": {
@@ -38,6 +38,7 @@
     "mocha": "^3.3.0",
     "mocha-loader": "^1.1.1",
     "rimraf": "^2.6.1",
+    "sinon": "^2.3.6",
     "source-map-loader": "^0.2.1",
     "ts-node": "^3.0.2",
     "utf8": "^2.1.2",
@@ -52,6 +53,7 @@
     "mobx": "^3.1.9",
     "socket.io": "^2.0.1",
     "socket.io-client": "^2.0.1",
+    "source-map-support": "^0.4.15",
     "uuid": "^3.0.1",
     "ws": "^3.0.0"
   }
