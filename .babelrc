@@ -6,6 +6,10 @@
   ],
   "plugins": [
     "transform-decorators-legacy",
-    "transform-flow-strip-types"
+    "transform-flow-strip-types",
+    ["transform-runtime", {
+        "polyfill": false,
+        "runtime": true
+    }]
   ]
 }

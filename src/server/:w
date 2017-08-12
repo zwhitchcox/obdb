@@ -11,6 +11,10 @@ const data = {
   '35': {is: 'up'},
 }
 
+function reportChanged(key) {
+
+}
+
 function converter(data) {
   for (const key in data) {
     let val = data[key]
@@ -20,7 +24,7 @@ function converter(data) {
         return val
       },
       set(newVal) {
-        runReactions(newVal)
+        reportChanged(key)
         data[key] = val = newVal
         return newVal
       }
@@ -29,10 +33,10 @@ function converter(data) {
 }
 
 const callbacks = {}
-const keysToReactions = {}
-const reactionsToKeys = {}
+const keysToCbs = {}
+const cbsToKeys = {}
 const subscriptions = {}
-const reactionsToSubs = {}
+const cbsToSubs = {}
 
 export function attach({server, filePath, startData}) {
   var io = require('socket.io')(server, { path: '/obdb' })
@@ -52,9 +56,6 @@ export function attach({server, filePath, startData}) {
         socket.emit('return', [subscription, id, path[0]])
       })
     })
-    socket.on('change', ([id, val]) => {
-      console.log(id, val)
-    })
   })
 }
 
@@ -68,45 +69,26 @@ export function getTree(obj, subscription) {
 }
 
 export function autorun(cb) {
-  const rId = uuid()
-  callbacks[rId] = cb
-  observe(cb, rId)
+  const cbId = uuid()
+  callbacks[cbId] = cb
+  observe(cb, cbId)
   return () => {
-    for (const key in reactionsToKeys[rId])
-      delete keysToReactions[rId][key]
-    delete callbacks[rId]
-    delete reactionsToKeys[rId]
+  for (const key in cbsToKeys[cbId])
+    delete keysToCbs[cbId][key]
   }
 }
 
-export function observe(cb, rId) {
+
+export function observe(cb, cbId) {
   const prevReportObserved = reportObserved
-  for (const key in reactionsToKeys[rId])
-    keysToReactions[key][rId] = false
-  reactionsToKeys[rId] = {}
+  for (const key in cbsToKeys[cbId])
+    keysToCbs[cbId][key] = false
+  cbsToKeys[cbId] = {}
   reportObserved = key => {
-    ;(keysToReactions[key] || (keysToReactions[key] = {}))[rId] = true
-    reactionsToKeys[rId][key] = true
+    ;(keysToCbs[key] || (keysToCbs[key] = {}))[cbId] = true
+    cbsToKeys[cbId][key] = true
     prevReportObserved(key)
   }
   cb()
   reportObserved = prevReportObserved
-}
-
-let inReaction = false
-const pendingReactions = []
-export function runReactions(key) {
-  for (const reaction in keysToReactions[key]) {
-    pendingReactions.push(reaction)
-    pendingReactionIndexes[reaction] = []
-      .concat(pendinReactionIndexes[reaction], pendingReactions.length)
-  }
-  if (inReaction) return
-  const curReactions = pendingReactions.slice()
-  pendingReactions.length = 0
-  for (let i = 0; i < curReactions.length; i++) {
-    for (const rId in  curReactions[i]) {
-      reactions[rId]()
-    }
-  }
 }

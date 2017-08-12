@@ -1,7 +1,7 @@
 var webpack = require('webpack')
 
 var config = module.exports = {
-  entry: './test.server.js',
+  entry: ['babel-polyfill', './test.server.js'],
   devtool: 'source-map',
   output: {
     filename: 'dist/[name].js',
