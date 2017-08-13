@@ -1,12 +1,16 @@
 /* @flow */
-export function isPrimitive(val: any) {
+export function isPrim(val: any) {
   return typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean' ||
     val === null || val === undefined
 }
 
-export function isPlainObject(value: any) {
+export function isPlain(value: any) {
   if (value === null || typeof value !== "object")
     return false;
   const proto = Object.getPrototypeOf(value);
   return proto === Object.prototype || proto === null;
+}
+
+export function isSoul(val) {
+  return isPlain(val) && Object.keys(cur) == '#' && cur['#']
 }

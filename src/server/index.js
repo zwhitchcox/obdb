@@ -4,28 +4,33 @@ import uuid from 'uuid/v4'
 const noop = _=>{}
 let reportObserved = noop
 
-
-const data = {
+let data = convert({
   hello: {'#': 34},
   '34': {what: {'#': 35 }},
   '35': {is: 'up'},
+})
+
+function convert(data) {
+  for (const key in data) {
+    const record = data[key]
+    for (const key in record) {
+      defineSetGet(record, key)
+    }
+  }
 }
 
-function converter(data) {
-  for (const key in data) {
-    let val = data[key]
-    Object.defineProperty(data, key, {
-      get() {
-        reportObserved(key)
-        return val
-      },
-      set(newVal) {
-        runReactions(newVal)
-        data[key] = val = newVal
-        return newVal
-      }
-    })
-  }
+function defineSetGet(record, key) {
+  Object.defineProperty(record, key, {
+    get(newVal) {
+      record[key] = newVal
+      runReactions(newVal)
+      return newVal
+    },
+    set() {
+      reportObserved(key)
+      return record[key]
+    }
+  })
 }
 
 const callbacks = {}
@@ -49,11 +54,11 @@ export function attach({server, filePath, startData}) {
           }
         }
         getTree(cur, subscription)
-        socket.emit('return', [subscription, id, path[0]])
+        socket.emit('subscription', [subscription, id, path[0]])
       })
     })
-    socket.on('change', ([id, val]) => {
-      console.log(id, val)
+    socket.on('change', ([id, key, val]) => {
+      data[id][key] = val
     })
   })
 }
@@ -70,7 +75,7 @@ export function getTree(obj, subscription) {
 export function autorun(cb) {
   const rId = uuid()
   callbacks[rId] = cb
-  observe(cb, rId)
+  observe(rId)
   return () => {
     for (const key in reactionsToKeys[rId])
       delete keysToReactions[rId][key]
@@ -79,7 +84,7 @@ export function autorun(cb) {
   }
 }
 
-export function observe(cb, rId) {
+export function observe(rId) {
   const prevReportObserved = reportObserved
   for (const key in reactionsToKeys[rId])
     keysToReactions[key][rId] = false
@@ -89,7 +94,7 @@ export function observe(cb, rId) {
     reactionsToKeys[rId][key] = true
     prevReportObserved(key)
   }
-  cb()
+  callbacks[rId]()
   reportObserved = prevReportObserved
 }
 
@@ -105,8 +110,7 @@ export function runReactions(key) {
   const curReactions = pendingReactions.slice()
   pendingReactions.length = 0
   for (let i = 0; i < curReactions.length; i++) {
-    for (const rId in  curReactions[i]) {
-      reactions[rId]()
-    }
+    for (const rId in  curReactions[i])
+      observe(rId)
   }
 }

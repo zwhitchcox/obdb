@@ -102,6 +102,7 @@ mochaConfig.plugins = [
 ]
 mochaConfig.devtool='source-map'
 mochaConfig.entry = sync('./src/{**/*,*}.spec.js')
+  .filter(name => !/server/.test(name))
 mochaConfig.module.rules.push(
   {
     test: /.spec.js$/,
