@@ -12,5 +12,5 @@ export function isPlain(value: any) {
 }
 
 export function isSoul(val) {
-  return isPlain(val) && Object.keys(cur) == '#' && cur['#']
+  return isPlain(val) && Object.keys(val) == '#' && val['#']
 }
