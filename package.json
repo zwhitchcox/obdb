@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test:wp": "node ./test/test",
-    "test": "mocha src/server/{**/*,*}.spec.js --watch --require ./test/mocha.setup"
+    "test": "NODE_ENV=test mocha src/server/{**/*,*}.spec.js --watch --require ./test/mocha.setup",
+    "test:server": "mocha src/server/index.spec.js --watch --require test/mocha.setup.js"
   },
   "repository": {
     "type": "git",

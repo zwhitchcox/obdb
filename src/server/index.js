@@ -1,34 +1,126 @@
-import uuid from 'uuid/v4'
-import { isSoul } from '../util'
+import { isSoul, isPlain, isPrim, getId } from '../util'
+const noop = () => {}
 
-export const cache = {}
+export class Obdb {
+  constructor(graph = {}) {
+    this.graph = JSON.parse(JSON.stringify(graph))
+    this.cbs = {}
+    this.idsToCbs = {}
+    this.cbsToIds = {}
+    this.cache = {}
+  }
 
-export function subscribe(path) {
-  getPathId(path, data)
+  subscribe(path, cb) {
+    const cbId = getId()
+    this.cbs[cbId] = cb
+    const pathId = this.getPathIds(path)
+    const allIds = this.getSubRecordIds(pathId, this.graph, {[pathId]: true})
+    for (const id in allIds) (this.idsToCbs[id] || (this.idsToCbs[id] = {}))[cbId] = true
+    this.cbsToIds[cbId] = allIds
+    cb(allIds)
+    return function unsubscribe() {
+      for (const id in allIds) delete this.cbsToIds[id][cbId]
+      delete cbsToIds[cbId]
+    }
+  }
+  setIdVal(id, val) {
+    this.graph[id] = val
+    const update = this.getSubRecordIds(id)
+    for (const cbId in this.idsToCbs[id]) {
+      this.cbs[cbId](update)
+    }
+  }
+  setIdKeyVal(id, key, val) {
+    this.graph[id][key] = val
+    const update = this.getSubRecordIds(id)
+    for (const cbId in this.idsToCbs[id]) {
+      this.cbs[cbId](update)
+    }
+  }
+  getPathIds = getPathIds.bind(this)
+  getSubRecordIds = getSubRecordIds.bind(this)
 }
 
-export function getPathId(path, data) {
+export function objToGraph(obj, graph, cache = new WeakMap) {
+  if (!graph) {
+    graph = {}
+  }
+  const id = getId()
+  cache.set(obj, id)
+  for (const key in obj) {
+    const prop = obj[key]
+    if (cache.has(prop)) newObj[key] = {'#': cache.get(prop)}
+    else if (isPlain(prop)) newObj[key] = {'#': objToGraph(prop, graph || newObj,  cache)}
+    else if (isPrim(prop)) newObj[key] = prop
+    else throw new TypeError('Can\'t handle that type yet!')
+  }
+  if (!graph) return newObj
+  graph[id] = newObj
+  return id
+}
+
+export function objFromGraph(id, graph, cache) {
+  if (!cache) {
+    id = getPathIds(id, graph)
+    cache = {}
+  }
+  const newObj = {}
+  const record = graph[id]
+  cache[id] = newObj
+  let cached;
+  for (const key in record) {
+    const prop = record[key]
+    newObj[key] = (cached = cache[(id = isSoul(prop))]) ?
+      cached : id ? objFromGraph(id, graph, cache) : prop
+  }
+  return newObj
+}
+
+export function subscribe(path, graph, cb) {
+  const pathId = getPathIds(path, graph)
+  const subRecordIds = getSubRecordIds(pathId)
+}
+
+export function getPathIds(path, graph) {
+  graph = graph || this.graph
+  const paths = {}
   if (typeof path === 'string') path = path.split('.')
-  let curId = path[0]
-  let cur;
-  for (let i = 1; i < path.length; i++)
-    curId = (cur = data[curId])
-      && (cur = cur[path[i]])
-      && Object.keys(cur) == '#'
-      && cur['#']
-  return curId
+  let cur = graph, curId;
+  const start = isSoul(cur[path[0]])
+  for (let i = 0; i < path.length && cur; i++)
+    cur = (curId = isSoul(cur[path[i]])) && (paths[curId] = true) && graph[curId]
+  return [paths, start]
 }
 
-export function getSubRecordIds(id, data) {
-  if (cache[id]) return cache[id]
-  let ids = [], subId
-  const returnObj = {}, record = data[id]
+export function getPathIdsWithCreation(path, graph) {
+  graph = graph || this.graph
+  if (typeof path === 'string') path = path.split('.')
+  let [pathIds, start] = getPathIds(path, graph)
+  if (Object.keys(pathIds) === path.length)
+    return pathIds
+  let i = 0, cur = graph, curId;
+  for (; i < path.length && cur; i++)
+    (cur = (curId = isSoul(cur[path[i]])) && graph[curId])
+  const newObj = cur = {}
+  i--
+  for (; i < path.length; i++)
+    (cur = cur[path[i]] = {})
+  const id = objToGraph(newObj, graph)
+  const newPathIds = getPathIds(path, graph)
+
+  return Object.assign(pathIds, newPathIds)
+}
+
+export function getSubRecordIds(id, graph, hash = {}) {
+  graph = graph || this.graph
+  let subId
+  const record = graph[id]
   for (const key in record)
     (subId = isSoul(record[key]))
-    && (returnObj[subId] = !!subId)
-    && Object.assign(returnObj, getSubRecordIds(subId, data))
-  
-  return cache[id] = Object.assign({}, returnObj)
+    && !hash[subId]
+    && (hash[subId] = true)
+    && getSubRecordIds(subId, graph, hash)
+  return hash
 }
 
 

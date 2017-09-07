@@ -11,5 +11,6 @@
         "polyfill": false,
         "runtime": true
     }]
-  ]
+  ],
+  "sourceMaps": "both"
 }
