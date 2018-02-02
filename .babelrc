@@ -12,5 +12,5 @@
     "runtime": true
   }]
   ],
-  "sourceMaps": "both"
+  "sourceMaps": "true"
 }
