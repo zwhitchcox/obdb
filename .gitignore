@@ -4,3 +4,4 @@ lib
 yarn.lock
 *.log
 build
+test/build

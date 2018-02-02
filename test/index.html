@@ -1,0 +1,21 @@
+<html>
+  hello2
+<script>
+const ws = new WebSocket(makews(window.location.host))
+ws.onopen = () => {
+  console.log('open')
+  ws.send('helloi')
+}
+ws.onmessage = (event) => {
+  console.log(event.data)
+}
+ws.onclose = e => {
+console.log('closed')
+}
+
+
+function makews(str) {
+  return 'ws://' + str.replace(/^https?:\/\//, '')
+}
+</script>
+</html>
