@@ -7,8 +7,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:server:compile": "rollup -c test/rollup.config.js",
-    "test:server:run": "node test/server.runner",
-    "test:server": "npm-run-all --parallel test:server:run test:server:compile "
+    "test:server": "node test/server.runner"
   },
   "repository": {
     "type": "git",

@@ -9,13 +9,25 @@ ws.onopen = () => {
 ws.onmessage = (event) => {
   console.log(event.data)
 }
-ws.onclose = e => {
-console.log('closed')
+ws.onclose = () => {
+  console.log('connection closed, waiting to reload')
+  reloadwhenready()
+}
+function reloadwhenready() {
+  console.log('not ready')
+  fetch('http://localhost:3002/ready')
+    .then(res=> res.text())
+    .then(text => {
+      if (text === 'false') reloadwhenready()
+
+      else if (text === 'true') window.location.reload()
+    })
+    .catch(e => reloadwhenready())
 }
 
 
 function makews(str) {
-  return 'ws://' + str.replace(/^https?:\/\//, '')
+  return 'ws://' + str.replace(/^https?:\/\//, '') + '/pirror'
 }
 </script>
 </html>
