@@ -1,28 +1,42 @@
-require('source-map-support').install()
-import { createRequest, handleRequest, Pirror } from './pirror'
+import { Pirror as PirrorServer } from './server.pirror'
+import { Pirror as PirrorClient } from './client.pirror'
+const PORT = 4000
+const express = require('express')
+const app = express()
+const pirror = {}
 
-const pirror1 = Pirror({name: '1'})
-const pirror2 = Pirror({name: '2'})
-pirror1.broadcast = (...args) => pirror2.handleRequest(...args)
-pirror2.broadcast = (...args) => pirror1.handleRequest(...args)
-
-test('createRequest', () => {
-  const obj = {b: 'yolo'}
-  const request = createRequest(obj)
-  expect(request).toBe(JSON.stringify(obj))
+beforeAll(done => {
+  const server = app.listen(PORT, () => {
+    log('listening')
+    pirror.server = new PirrorServer({server})                                      
+    pirror.client = new PirrorClient({peerurls: [`ws://localhost:${PORT}/pirror`]})
+    pirror.server.name = 'pirror.server'
+    pirror.client.name = 'pirror.client'
+    done()
+  })
 })
 
-test('handleRequest', () => {
-  const data = {}
-  handleRequest(JSON.stringify({
-    a:1
-  }), data)
-  expect(data['a']).toBe(1)
-})
+it('literally nothing', () => {
+  pirror.client.setData({hello: 'hi'})
+  pirror.server.setData({serverhello: 'hi'})
+  return waituntil(() => pirror.server.data.hello)
+    .then(() => {
+      log.skip('client', pirror.client.data)
+      log.skip('server', pirror.server.data)
+    })
+}, 2000)
 
-test('create and handle requests', () => {
-  const newdata = {mylittlepony: 'the coolest pony in the world'}
-  pirror1.setData({hello: 'hi'})
-  expect(pirror1.data.hello).toBe('hi')
-  expect(pirror2.data.hello).toBe('hi')
-})
+
+function waituntil(condition) {
+  log('running wait until')
+  return new Promise((res, rej) => {
+    const startTime = +new Date
+    function check() {
+      if (condition())
+        res()
+      else
+        setTimeout(check, 10)
+    }
+    check()
+  })
+}

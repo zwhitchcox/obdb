@@ -1,8 +1,16 @@
+import {Pirror} from '../src/pirror'
+require('source-map-support').install()
 const url = require('url')
 const WS = require('ws')
 const express = require('express')
 
+const pirror = new Pirror
 
+pirror.broadcast = data => {
+  wss.clients.forEach(client => {
+    client.send(data)
+  })
+}
 const app = express()
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -20,10 +28,15 @@ server.on('upgrade', (req, socket, head) => {
   const pathname = url.parse(req.url, true)
   if (pathname.href === '/pirror') {
     wss.handleUpgrade(req, socket, head, ws => {
-      ws.on('message', message => {
-        console.log('received %s', message)
+      wss.emit('connection', ws)
+      ws.on('message', data => {
+        if (data.type === 'update') {
+          pirror.handleRequest(data)
+          pirror.setData({x: 33})
+        }
       })
-      ws.send('something 19')
     })
+  } else {
+    socket.destroy()
   }
 })

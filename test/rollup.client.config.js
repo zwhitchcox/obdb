@@ -5,9 +5,9 @@ import replace from 'rollup-plugin-replace'
 import resolve from 'rollup-plugin-node-resolve'
 
 export default {
-  input: __dirname + '/server.js',
+  input: __dirname + '/client.js',
   output: {
-    file: __dirname + '/build/server.js',
+    file: __dirname + '/build/client.js',
     format: 'iife',
     name: 'zane',
     sourcemap: true,

@@ -48,5 +48,5 @@ gaze([projectroot + '/{test,src}/{**/,}*', '!'+projectroot+'/test/build/**'], (e
 })
 
 function compile() {
-  compiler = cp.spawn('yarn', ['test:server:compile'], {stdio: 'inherit', cwd: projectroot})
+  compiler = cp.spawn('yarn', ['test:compile'], {stdio: 'inherit', cwd: projectroot})
 }
