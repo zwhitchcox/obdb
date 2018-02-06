@@ -7,7 +7,6 @@ const pirror = {}
 
 beforeAll(done => {
   const server = app.listen(PORT, () => {
-    log('listening')
     pirror.server = new PirrorServer({server})                                      
     pirror.client = new PirrorClient({peerurls: [`ws://localhost:${PORT}/pirror`]})
     pirror.server.name = 'pirror.server'
@@ -16,27 +15,24 @@ beforeAll(done => {
   })
 })
 
-it('literally nothing', () => {
-  pirror.client.setData({hello: 'hi'})
+it('server and client update each other', async () => {
+  await pirror.client.setData({clienthello: 'hi'})
   pirror.server.setData({serverhello: 'hi'})
-  return waituntil(() => pirror.server.data.hello)
+  return waitUntil(() => pirror.server.data.clienthello && pirror.client.data.serverhello)
     .then(() => {
-      log.skip('client', pirror.client.data)
-      log.skip('server', pirror.server.data)
+      const expectedResult = {
+        clienthello: 'hi',
+        serverhello: 'hi',
+      }
+      expect(pirror.client.data).toEqual(expectedResult)
+      expect(pirror.server.data).toEqual(expectedResult)
     })
+    .then(() => {
+      pirror.client.setData({x: 33})
+    })
+    .then(waitUntil(()=> pirror.server.data.x))
+    .then(() => pirror.server.setData({x: 42}))
+    .then(waitUntil(()=> pirror.client.data.x === 42))
 }, 2000)
 
 
-function waituntil(condition) {
-  log('running wait until')
-  return new Promise((res, rej) => {
-    const startTime = +new Date
-    function check() {
-      if (condition())
-        res()
-      else
-        setTimeout(check, 10)
-    }
-    check()
-  })
-}

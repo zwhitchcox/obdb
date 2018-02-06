@@ -9,7 +9,12 @@ export class Pirror extends PirrorMain {
 
   }
   broadcast(data) {
-    this.peers.forEach(peer => peer.update(data))
+    if (this.peers.length === 1) {
+      return this.peers[0].update(data)
+    }
+    else {
+      return this.peers.map(peer => peer.update(data))
+    }
   }
 }
 
@@ -20,15 +25,15 @@ export class Connection {
     this.ws = new WebSocket(url)
     this.ws.on('message', e => parent.handleMessage(e))
     this.ws.on('open', () => {
-      this.pending.reverse().forEach(this.update.bind(p))
+      this.pending.reverse().forEach(({res, update}) => this.ws.send(update) && res())
     })
     this.url = url
   }
-  update(data) {
-    const update = data
-    if (this.ws.readyState === WebSocket.OPEN)
-      this.ws.send(JSON.stringify(update))
-    else this.pending.push(data)
+  update(update) {
+    return new Promise((res, req) => {
+      if (this.ws.readyState === WebSocket.OPEN) this.ws.send(update) && res()
+      else this.pending.push({res, update})
+    })
   }
 }
 

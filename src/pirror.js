@@ -3,10 +3,7 @@ export function createRequest(request) {
 }
 
 export function handleUpdate(update) {
-  log('data before', this.name, this.data)
-  log('update', update)
   Object.assign(this.data, update)
-  log('data after', this.name, this.data)
 }
 
 export class PirrorMain {

@@ -16,9 +16,9 @@ export class Pirror extends PirrorMain {
       if (pathname.href === '/pirror') {
         this.wss.handleUpgrade(req, socket, head, ws => {
           this.wss.emit('connection', ws)
+          ws.send(JSON.stringify({type: 'update', data: this.data}))
           ws.on('message', msg => {
             this.handleMessage(msg)
-            this.setData({x: 33})
           })
         })
       }
@@ -26,6 +26,7 @@ export class Pirror extends PirrorMain {
   }
   broadcast(msg) {
     this.wss.clients.forEach(client => {
+      log('msg', msg)
       client.send(msg)
     })
   }
