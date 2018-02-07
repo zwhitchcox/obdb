@@ -22,6 +22,10 @@ addLog.only = function(...args) {
 }
 
 addLog.skip = () => {}
+addLog.fullstack = function(...args) {
+  const stack = (new Error).stack.split('\n').slice(1).join('\n')
+  logItems.push(getLogString({args, filenameandnumber: stack}))
+}
 
 function writelog(str) {
   const projectroot = require('path').resolve(__dirname, '..')
@@ -64,8 +68,8 @@ function waitUntil(condition) {
   })
 }
 
-function checkData(pirror, data) {
+function checkData(reflex, data) {
   return Object.keys(data).every(key => {
-    return data[key] === pirror[key]
+    return data[key] === reflex.data[key]
   })
 }

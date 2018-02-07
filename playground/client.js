@@ -1,8 +1,8 @@
-import  { Pirror, createRequest } from '../src/pirror'
+import  { Reflex } from '..'
 const ws = new WebSocket(makews(window.location.host))
 
 ws.onopen = () => {
-  createPirror()
+  createReflex()
 }
 ws.onclose = () => {
   console.log('connection closed, waiting to reload')
@@ -20,22 +20,22 @@ function reloadwhenready() {
 
 
 function makews(str) {
-  return 'ws://' + str.replace(/^https?:\/\//, '') + '/pirror'
+  return 'ws://' + str.replace(/^https?:\/\//, '') + '/reflex'
 }
 
-function createPirror() {
-  const pirror = new Pirror
-  pirror.broadcast = data => {
+function createReflex() {
+  const reflex = new Reflex
+  reflex.broadcast = data => {
     ws.send(type:'update', data)
   }
   ws.onmessage = event => {
-    pirror.handleRequest(event.data)
+    reflex.handleRequest(event.data)
   }
-  runtests(pirror)
+  runtests(reflex)
 }
 
-function runtests(pirror) {
-  pirror.setData({hello: 'hi'})
+function runtests(reflex) {
+  reflex.setData({hello: 'hi'})
 }
 function expectAll(data) {
   ws.send({type: 'expectall', data})

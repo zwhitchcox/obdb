@@ -1,12 +1,12 @@
-import {Pirror} from '../src/pirror'
+import {Reflex} from '..'
 require('source-map-support').install()
 const url = require('url')
 const WS = require('ws')
 const express = require('express')
 
-const pirror = new Pirror
+const reflex = new Reflex
 
-pirror.broadcast = data => {
+reflex.broadcast = data => {
   wss.clients.forEach(client => {
     client.send(data)
   })
@@ -26,13 +26,13 @@ const wss = new WS.Server({noServer: true})
 
 server.on('upgrade', (req, socket, head) => {
   const pathname = url.parse(req.url, true)
-  if (pathname.href === '/pirror') {
+  if (pathname.href === '/reflex') {
     wss.handleUpgrade(req, socket, head, ws => {
       wss.emit('connection', ws)
       ws.on('message', data => {
         if (data.type === 'update') {
-          pirror.handleRequest(data)
-          pirror.setData({x: 33})
+          reflex.handleRequest(data)
+          reflex.setData({x: 33})
         }
       })
     })

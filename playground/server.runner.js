@@ -42,11 +42,11 @@ process.on('exit', () => {
 
 const projectroot = path.resolve(__dirname, '..')
 let compiler;
-gaze([projectroot + '/{test,src}/{**/,}*', '!'+projectroot+'/test/build/**'], (err, watcher) => {
+gaze([projectroot + '/{playground,src}/{**/,}*', '!'+projectroot+'/playground/build/**'], (err, watcher) => {
   compile()
   watcher.on('all', compile)
 })
 
 function compile() {
-  compiler = cp.spawn('yarn', ['test:compile'], {stdio: 'inherit', cwd: projectroot})
+  compiler = cp.spawn('yarn', ['playground:compile'], {stdio: 'inherit', cwd: projectroot})
 }

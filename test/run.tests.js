@@ -22,7 +22,6 @@ gaze(projectroot + '/src/{**/,}*.js', (err, watcher) => {
 })
 
 function start() {
-  console.log('started')
   glob(projectroot + '/src/{**/,}*.test.js',{},  (err, files) => {
     files.forEach(file => require(file))
     runTests()

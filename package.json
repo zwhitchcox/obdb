@@ -1,17 +1,16 @@
 {
-  "name": "pirror",
+  "name": "reflex",
   "version": "1.0.0",
   "description": "",
-  "main": "src/pirror.server.js",
-  "browser": "src/pirror.client.js",
+  "main": "src/reflex.server.js",
+  "browser": "src/reflex.client.js",
   "scripts": {
     "test": "jest",
-    "test:watch": "node test/jest.runner",
-    "pg:watch": "jest --forceExit --watch",
-    "pg:server:compile": "rollup -c test/rollup.server.config.js",
-    "pg:client:compile": "rollup -c test/rollup.client.config.js",
-    "pg:compile": "npm-run-all --parallel test:server:compile test:client:compile",
-    "pg:server": "node test/server.runner"
+    "test:watch": "jest --watch",
+    "playground:server:compile": "rollup -c playground/rollup.server.config.js",
+    "playground:client:compile": "rollup -c playground/rollup.client.config.js",
+    "playground:compile": "npm-run-all --parallel playground:server:compile playground:client:compile",
+    "playground": "node playground/server.runner"
   },
   "repository": {
     "type": "git",
