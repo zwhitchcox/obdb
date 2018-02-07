@@ -8,9 +8,11 @@ export class Reflex {
     if (!server) throw new TypeError('We require a server!')
     this.wss = new WS.Server({noServer: true})
     server.on('upgrade', (req, socket, head) => {
+      console.log('upgrading')
       const pathname = url.parse(req.url, true)
       if (pathname.href === '/reflex') {
         this.wss.handleUpgrade(req, socket, head, ws => {
+          ws.send(JSON.stringify({type: 'update', data: {hello:3}}))
           this.wss.emit('connection', ws)
           ws.send(JSON.stringify({type: 'update', data: this.data}))
           ws.on('message', msg => {
@@ -39,6 +41,7 @@ export class Reflex {
 
   handleMessage(msg, sender) {
     const parsed = JSON.parse(msg)
+    console.log(msg)
     if (parsed.type === 'update') {
       this.update(parsed.data, sender)
     }

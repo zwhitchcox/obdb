@@ -1,24 +1,35 @@
-import WebSocket from 'ws'
+import EventEmitter from 'events'
+const WebSocket = (typeof window !== 'undefined') ? window.WebSocket : require('ws')
 
-export class Reflex {
+export class Reflex extends EventEmitter {
   pending = []
   data = {}
 
-  constructor({url, name}) {
+  constructor({url, name} = {}) {
+    super()
     this.name = name
     this.closed = true
-    this.ws = new WebSocket(url || makeurlws(window.localhost.href))
-    this.ws.on('message', e => this.handleMessage(e, this.ws))
-    this.ws.on('open', () => (this.open = true) && this.sendPending())
-    this.ws.on('close', () => this.closed = true)
+    console.log(url || makeurlws(window.location.href))
+    this.ws = new WebSocket(url || makeurlws(window.location.href))
+    this.ws.onmessage = e => this.emit('message', e)
+    this.ws.onopen = e => this.emit('open', e)
+    this.ws.onclose = e => this.emit('close', e)
+    this.ws.onerror = e => this.emit('error', e)
+    this.on('message', e => this.handleMessage(e.data, this.ws))
+    this.on('open', () => (this.open = true) && this.sendPending())
+    this.on('close', () => this.closed = true)
   }
 
   broadcast(msg, sender) {
+    console.log('broadcasting')
     msg = JSON.stringify(msg)
-    if (this.open)
+    if (this.open) {
       this.ws.send(msg)
+      console.log('sending', msg)
+    }
     else
       this.pending.push(msg)
+    console.log('pending', this.pending)
   }
 
   sendPending() {
@@ -35,6 +46,7 @@ export class Reflex {
     }
     if (Object.keys(toBroadcast).length && !sender)
       this.broadcast({type: 'update', data: toBroadcast})
+    this.emit('update', this.data)
   }
 
   handleMessage(msg, sender) {
@@ -46,5 +58,5 @@ export class Reflex {
 }
 
 function makeurlws(str) {
-  return 'ws://' + str.replace(/^https?:\/\//, '') + '/reflex'
+  return 'ws://' + str.replace(/^https?:\/\//, '') + 'reflex'
 }

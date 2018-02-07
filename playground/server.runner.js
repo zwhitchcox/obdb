@@ -2,16 +2,19 @@ const gaze = require('gaze')
 const cp = require('child_process')
 const path = require('path')
 const express = require('express')
+const WebSocket = require('ws')
 const app = express()
-
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
-});
-app.listen(3002)
-let ready = 'false'
-app.get('/ready', (req, res) => res.send(ready))
+const wss = new WebSocket.Server({port: 3002})
+wss.on('connection', ws => {
+  ws.on('error', console.error)
+})
+wss.broadcast = function broadcast(data) {
+  wss.clients.forEach(function each(client) {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(data);
+    }
+  });
+};
 
 let server;
 gaze(__dirname + '/build/server.js', (err, watcher) => {
@@ -45,6 +48,9 @@ let compiler;
 gaze([projectroot + '/{playground,src}/{**/,}*', '!'+projectroot+'/playground/build/**'], (err, watcher) => {
   compile()
   watcher.on('all', compile)
+})
+gaze([projectroot+'/playground/build/client.js'],  (err, watcher) => {
+  watcher.on('all', () => console.log('sending refresh') || wss.broadcast('refresh'))
 })
 
 function compile() {

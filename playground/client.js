@@ -1,42 +1,44 @@
 import  { Reflex } from '..'
-const ws = new WebSocket(makews(window.location.host))
+import uuid from 'uuid/v4'
+import './reload'
 
-ws.onopen = () => {
-  createReflex()
-}
-ws.onclose = () => {
-  console.log('connection closed, waiting to reload')
-  reloadwhenready()
-}
-function reloadwhenready() {
-  fetch('http://localhost:3002/ready')
-    .then(res=> res.text())
-    .then(text => {
-      if (text === 'false') reloadwhenready()
-      else if (text === 'true') window.location.reload()
-    })
-    .catch(e => reloadwhenready())
-}
+import React, {Component} from 'react'
+import ReactDOM from 'react-dom'
+
+const reflex = new Reflex
+reflex.on('update', render)
 
 
-function makews(str) {
-  return 'ws://' + str.replace(/^https?:\/\//, '') + '/reflex'
-}
 
-function createReflex() {
-  const reflex = new Reflex
-  reflex.broadcast = data => {
-    ws.send(type:'update', data)
+class Hello extends Component {
+  handleChange(change) {
+    this.newVal = change
   }
-  ws.onmessage = event => {
-    reflex.handleRequest(event.data)
+  handleClick() {
+    this.update()
   }
-  runtests(reflex)
-}
+  handleKeyPress(e) {
+    if (e.key === 'Enter') {
+      this.update()
+    }
+  }
+  update() {
+    reflex.update({hello: this.newVal})
+  }
 
-function runtests(reflex) {
-  reflex.setData({hello: 'hi'})
+  render() {
+    return <div>
+      {reflex.data.hello}
+      <br /><br />
+      <input onKeyUp={e => this.handleKeyPress(e)} onChange={e =>this.handleChange(e.target.value)} />
+      <br />
+      <br />
+      <button onClick={()=>this.handleClick()}>update</button>
+    </div>
+  }
 }
-function expectAll(data) {
-  ws.send({type: 'expectall', data})
+render()
+
+function render() {
+  ReactDOM.render(<Hello />, document.querySelector('#app'))
 }
