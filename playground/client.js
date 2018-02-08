@@ -1,44 +1,36 @@
 import  { Reflex } from '..'
 import uuid from 'uuid/v4'
 import './reload'
+import { observable, extendObservable, autorun } from 'mobx'
+import { observer } from 'mobx-react'
 
 import React, {Component} from 'react'
 import ReactDOM from 'react-dom'
 
 const reflex = new Reflex
-reflex.on('update', render)
+const store = observable.map({})
+store.set('val', 'hello')
 
+reflex.on('update', data => {
+  for (const key in data) {
+    store.set(key, data[key])
+  }
+})
+autorun(() => {
+  store.forEach((val, key) => reflex.update({[key]: val})) 
+})
 
-
+@observer
 class Hello extends Component {
-  handleChange(change) {
-    this.newVal = change
-  }
-  handleClick() {
-    this.update()
-  }
-  handleKeyPress(e) {
-    if (e.key === 'Enter') {
-      this.update()
-    }
-  }
-  update() {
-    reflex.update({hello: this.newVal})
-  }
-
   render() {
+    const {store} = this.props
+    console.log('render', store.values())
     return <div>
-      {reflex.data.hello}
+      {store.get('val')}
       <br /><br />
-      <input onKeyUp={e => this.handleKeyPress(e)} onChange={e =>this.handleChange(e.target.value)} />
-      <br />
-      <br />
-      <button onClick={()=>this.handleClick()}>update</button>
+      <input value={store.get('val')} onChange={e => store.set('val', e.target.value)} />
     </div>
   }
 }
-render()
 
-function render() {
-  ReactDOM.render(<Hello />, document.querySelector('#app'))
-}
+ReactDOM.render(<Hello store={store} />, document.querySelector('#app'))

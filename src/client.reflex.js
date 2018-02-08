@@ -9,7 +9,6 @@ export class Reflex extends EventEmitter {
     super()
     this.name = name
     this.closed = true
-    console.log(url || makeurlws(window.location.href))
     this.ws = new WebSocket(url || makeurlws(window.location.href))
     this.ws.onmessage = e => this.emit('message', e)
     this.ws.onopen = e => this.emit('open', e)
@@ -21,15 +20,12 @@ export class Reflex extends EventEmitter {
   }
 
   broadcast(msg, sender) {
-    console.log('broadcasting')
     msg = JSON.stringify(msg)
     if (this.open) {
       this.ws.send(msg)
-      console.log('sending', msg)
     }
     else
       this.pending.push(msg)
-    console.log('pending', this.pending)
   }
 
   sendPending() {

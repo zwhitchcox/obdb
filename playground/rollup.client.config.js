@@ -19,7 +19,7 @@ export default {
       babelrc: false,
       exclude: 'node_modules/**',
       presets: [ [ 'es2015', { modules: false } ], 'stage-0', 'react' ],
-      plugins: [ 'external-helpers' ]
+      plugins: [ 'external-helpers', 'transform-decorators-legacy' ]
     }),
     cjs({
       exclude: 'node_modules/process-es6/**',
@@ -34,7 +34,7 @@ export default {
       ],
       namedExports: {
         'node_modules/react/index.js': ['Children', 'Component', 'PropTypes', 'createElement'],
-        'node_modules/react-dom/index.js': ['render']
+        'node_modules/react-dom/index.js': ['render', 'findDOMNode', 'unstable_batchedUpdates']
       }
     }),
     globals(),
