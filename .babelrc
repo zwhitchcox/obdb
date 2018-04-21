@@ -1,16 +1,22 @@
+
 {
   "presets": [
-    "env",
-    "es2015",
-    "stage-0"
+    [ "es2015",
+      {
+        "modules": false
+      }
+    ],
+    [ "env",
+    {
+      "modules": false
+    }
+    ],
+    "react"
   ],
   "plugins": [
     "transform-decorators-legacy",
-    "transform-flow-strip-types",
-    ["transform-runtime", {
-        "polyfill": false,
-        "runtime": true
-    }]
+    "transform-class-properties",
+    "external-helpers"
   ],
   "sourceMaps": "both"
 }

@@ -1,0 +1,21 @@
+* {
+  font-family: 'Roboto', sans-serif;
+}
+body {
+  margin: 2%;
+  padding: 2%;
+}
+
+
+h2 {
+  padding-bottom: .3em;
+  font-size: 1.5em;
+  line-height: 1.334;
+  border-bottom: 1px solid #eee;
+  font-weight: 400;
+}
+
+a {
+  color: blue;
+  cursor: pointer;
+}
