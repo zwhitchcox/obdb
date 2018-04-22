@@ -17,7 +17,7 @@ const get_blank_person = () => ({
 @observer export default class App extends React.Component {
   @observable new_person = get_blank_person()
   componentWillMount() {
-    store.subscribe('people')
+    store.subscribe('people', [])
   }
   add_person = e => {
     e.preventDefault()

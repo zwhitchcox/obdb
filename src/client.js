@@ -7,47 +7,42 @@ const ws = new WS(`ws://${location.host}/obdb`)
 export const maps = []
 export const subscribed = observable.map({})
 export const store = observable({
-  subscribe(field) {
-    if (Array.isArray(field)) {
-      return Promise.all(field.map(this.subscribe))
-    }
+  subscribe(field, type = {}) {
     if (subscribed.get(field)) return
     subscribed.set(field, true)
-    extendObservable(store, {
-      [field]: []
-    })
-    maps[field] = []
-    const msg = {
-      type: 'subscribe',
-      field,
-    }
-    ws.send(msg)
 
-    //return fetch(`/db/${field}`)
-    //  .then(res => res.json())
-    //  .then(rows => {
-    //    transaction(() => {
-    //      for (const id in rows) {
-    //        const val = rows[id]
-    //        store.maps[field].push(id)
-    //        store[field].push(rows[id])
-    //        if (Object(val) === val) {
-    //          mirror_obj(store[field][store[field].length - 1], id, field)
-    //        }
-    //      }
-    //    })
-    //    observe(store[field], mirror(field))
-    //  })
-    //  .catch(console.error)
+    if (Array.isArray(type)) {
+      if (Array.isArray(field)) {
+        return Promise.all(field.map(field => this.subscribe(field, [])))
+      }
+      extendObservable(store, {
+        [field]: [],
+      })
+      maps[field] = []
+      ws.send({
+        type: 'array_subscribe',
+        field,
+      })
+    } else if (typeof type === 'object') {
+      extendObservable(store, {
+        [field]: {},
+      })
+      ws.send({
+        type: 'object_subscribe',
+        field,
+      })
+    }
   },
 })
 ws.on_msg(msg => {
-  if (msg.type === 'subscription') {
-    handle_subscription(msg.data, msg.field)
+  if (msg.type === 'array_subscription') {
+    array_handle_subscription(msg.data, msg.field)
+  } else if (msg.type === 'object_subscription') {
+
   }
 })
 
-export function handle_subscription(rows, field) {
+export function array_handle_subscription(rows, field) {
   transaction(() => {
     for (const id in rows) {
       const val = rows[id]
@@ -58,57 +53,50 @@ export function handle_subscription(rows, field) {
       }
     }
   })
-  observe(store[field], mirror(field))
+  observe(store[field], array_mirror(field))
 }
 
-export function mirror(field){
+export function array_mirror(field){
   return event => {
     if (event.type === 'splice') {
-      add(field, event)
-      remove(field, event)
+      array_add(field, event)
+      array_remove(field, event)
     } else {
-      update(field, event.index)
+      array_update(field, event)
     }
   }
 }
-export function add(field, {added, index}) {
+export function array_add(field, {added, index}) {
   let data;
   transaction(() => {
     data = toJS(added).reduce((prev, cur, i) => {
       const id = uuid()
       prev[id] = cur
       maps[field].splice(index + i, 0, id)
+      mirror_obj(store[field][index + i], id, field)
       return prev
-        //mirror_obj(store[field][event.index + i], id, field)
       }, {})
   })
 
   ws.send({
-    type: 'add',
+    type: 'array_add',
     field: field,
     data,
   })
 }
 
-export function remove(field, { index, removedCount }) {
+export function array_remove(field, { index, removedCount }) {
   const ids = maps[field].splice(index, removedCount)
   ws.send({
-    type: 'delete',
+    type: 'array_delete',
     ids,
     field,
   })
 }
 
-export function update(field, i) {
-  const value = toJS(store[field][i])
-  const id = uuid()
-  maps[field][i] = id
-
-  ws.send({
-    type: 'add',
-    field: field,
-    data: { [id]: value }
-  })
+export function array_update(field, {newValue, index}) {
+  array_remove(field, {index, removedCount: 1})
+  array_add(field, {added: [newValue], index})
 }
 
 export function mirror_obj(obj, id, field) {
@@ -127,5 +115,6 @@ export function update_obj(field, id, value) {
   })
 }
 
-ws.on_msg(msg => {
-})
+export function object_mirror(field, obj) {
+
+}
