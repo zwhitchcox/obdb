@@ -32,6 +32,7 @@ export const store = observable({
 
 export function mirror(field){
   return event => {
+    console.log(event)
     if (event.type === 'splice') {
       event.added.forEach(add(field, event.index))
       store.maps[field]

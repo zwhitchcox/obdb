@@ -9,6 +9,7 @@ import { Link } from './link'
   render() {
     return <div>
       <h1>Home</h1>
+      <Link to={'/edit'}>Edit</Link>
     </div>
   }
 }
