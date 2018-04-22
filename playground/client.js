@@ -22,9 +22,10 @@ const get_blank_person = () => ({
   add_person = e => {
     e.preventDefault()
     store.people.push(this.new_person)
-    this.new_person = get_blank_person()
+    //this.new_person = get_blank_person()
   }
   render() {
+    console.log(store.people)
     return <MuiThemeProvider>
       <div>
         <form onSubmit={this.add_person}>
@@ -45,15 +46,21 @@ const get_blank_person = () => ({
               <TableHeaderColumn>
                 Race
               </TableHeaderColumn>
+              <TableHeaderColumn>
+                Delete
+              </TableHeaderColumn>
             </TableRow>
           </TableHeader>
           <TableBody displayRowCheckbox={false}>
-            {store.people.map((person, i) => <TableRow key={i} selectable={false}>
+            {store.people.map((person, i) => console.log(toJS(person)) || <TableRow key={i} selectable={false}>
               <TableRowColumn>
-                <TextField onChange={e => person.name = e.target.value} name="Name" value={person.name} fullWidth={true} />
+                <TextField onChange={e => (person.name = e.target.value)} name="Name" value={person.name} fullWidth={true} />
               </TableRowColumn>
               <TableRowColumn>{person.age}</TableRowColumn>
               <TableRowColumn>{person.race}</TableRowColumn>
+              <TableRowColumn>
+                <RaisedButton onClick={() =>store.people.splice(i, 1)}>Delete</RaisedButton>
+              </TableRowColumn>
           </TableRow>)}
         </TableBody>
       </Table>

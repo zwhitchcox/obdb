@@ -46777,8 +46777,13 @@ should be injected by the application.');
       }).then(function (rows) {
         transaction(function () {
           for (var id in rows) {
+            var val = rows[id];
+            console.log(id, val);
             store$1.maps[field].push(id);
             store$1[field].push(rows[id]);
+            if (Object(val) === val) {
+              mirror_obj(store$1[field][store$1[field].length - 1], id, field);
+            }
           }
         });
         observe(store$1[field], mirror(field));
@@ -46788,7 +46793,6 @@ should be injected by the application.');
 
   function mirror(field) {
     return function (event) {
-      console.log(event);
       if (event.type === 'splice') {
         event.added.forEach(add(field, event.index));
         store$1.maps[field].splice(event.index, event.removedCount).forEach(remove$1(field));
@@ -46810,6 +46814,7 @@ should be injected by the application.');
         return res.text();
       }).then(function (id) {
         store$1.maps[field].splice(main_index + i, 0, id);
+        mirror_obj(store$1[field][main_index + i], id, field);
       });
     };
   }
@@ -46834,6 +46839,21 @@ should be injected by the application.');
       }),
       method: 'PUT',
       body: value === Object(value) ? JSON.stringify(value) : value
+    });
+  }
+
+  function mirror_obj(obj, id, field) {
+    observe(obj, function (e) {
+      update_obj(field, id, e.object);
+    });
+  }
+  function update_obj(field, id, value) {
+    fetch('/db/' + field + '/' + id, {
+      headers: new Headers({
+        'content-type': 'application/json'
+      }),
+      method: 'PUT',
+      body: JSON.stringify(toJS(value))
     });
   }
 
@@ -47762,7 +47782,7 @@ should be injected by the application.');
       return _ret = (_temp = (_this = possibleConstructorReturn(this, (_ref = App.__proto__ || Object.getPrototypeOf(App)).call.apply(_ref, [this].concat(args))), _this), _initDefineProp(_this, 'new_person', _descriptor, _this), _this.add_person = function (e) {
         e.preventDefault();
         store$1.people.push(_this.new_person);
-        _this.new_person = get_blank_person();
+        //this.new_person = get_blank_person()
       }, _temp), possibleConstructorReturn(_this, _ret);
     }
 
@@ -47776,6 +47796,7 @@ should be injected by the application.');
       value: function render() {
         var _this2 = this;
 
+        console.log(store$1.people);
         return react.createElement(
           MuiThemeProvider,
           null,
@@ -47826,6 +47847,11 @@ should be injected by the application.');
                     Table_3,
                     null,
                     'Race'
+                  ),
+                  react.createElement(
+                    Table_3,
+                    null,
+                    'Delete'
                   )
                 )
               ),
@@ -47833,7 +47859,7 @@ should be injected by the application.');
                 Table_6,
                 { displayRowCheckbox: false },
                 store$1.people.map(function (person, i) {
-                  return react.createElement(
+                  return console.log(toJS(person)) || react.createElement(
                     Table_2,
                     { key: i, selectable: false },
                     react.createElement(
@@ -47852,6 +47878,17 @@ should be injected by the application.');
                       Table_1$1,
                       null,
                       person.race
+                    ),
+                    react.createElement(
+                      Table_1$1,
+                      null,
+                      react.createElement(
+                        RaisedButton$2,
+                        { onClick: function onClick() {
+                            return store$1.people.splice(i, 1);
+                          } },
+                        'Delete'
+                      )
                     )
                   );
                 })

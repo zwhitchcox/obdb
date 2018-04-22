@@ -20,8 +20,13 @@ export const store = observable({
       .then(rows => {
         transaction(() => {
           for (const id in rows) {
+            const val = rows[id]
+            console.log(id, val)
             store.maps[field].push(id)
             store[field].push(rows[id])
+            if (Object(val) === val) {
+              mirror_obj(store[field][store[field].length - 1], id, field)
+            }
           }
         })
         observe(store[field], mirror(field))
@@ -32,7 +37,6 @@ export const store = observable({
 
 export function mirror(field){
   return event => {
-    console.log(event)
     if (event.type === 'splice') {
       event.added.forEach(add(field, event.index))
       store.maps[field]
@@ -56,6 +60,7 @@ export function add(field, main_index) {
       .then(res => res.text())
       .then(id => {
         store.maps[field].splice(main_index + i, 0, id)
+        mirror_obj(store[field][main_index + i], id, field)
       })
   }
 }
@@ -83,3 +88,17 @@ export function update(field, i) {
   })
 }
 
+export function mirror_obj(obj, id, field) {
+  observe(obj, e => {
+    update_obj(field, id, e.object)
+  })
+}
+export function update_obj(field, id, value) {
+  fetch(`/db/${field}/${id}`, {
+    headers: new Headers({
+      'content-type': 'application/json',
+    }),
+    method: 'PUT',
+    body: JSON.stringify(toJS(value)),
+  })
+}
