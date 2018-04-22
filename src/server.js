@@ -4,51 +4,73 @@ const uuid = require('uuid/v4')
 const WebSocket = require('ws')
 const store = {}
 
-export default function attach({dir, server}) {
-  const wss  = new WebSocket.Server({ server })
-  wss.on('connection', ws => {
-    ws.on('message', msg => {
-      console.log(msg)
-      ws.send('something')
+export class Obdb {
+  constructor({dir, server}) {
+    this.dir = dir
+    const wss  = new WebSocket.Server({ server })
+    wss.on('connection', ws => {
+      ws.on('message', msg => {
+        msg = JSON.parse(msg)
+        if (msg.type === 'subscribe') {
+          this.onSubscribe(msg.field, ws)
+        } else if (msg.type === 'add') {
+          this.onAdd(msg.field, msg.data)
+        } else if (msg.type === 'delete') {
+          this.onDelete(msg.field, msg.ids)
+        } else if (msg.type === 'update') {
+          this.onUpdate(msg.field, msg.data)
+        }
     })
   })
-
-  //app.use(body_parser.json())
-  //app.use(body_parser.text())
-  //app.post('/db/:field', (req, res) => {
-  //  const id = uuid()
-  //  const { field } = req.params
-  //  store[field][id] = req.body
-  //  write_data(dir, field)
-  //    .then(() => res.end(id))
-  //    .catch(() => res.status(500).end('Unable to write data - server error'))
-  //})
-  //app.get('/db/:field', (req, res) => {
-  //  const { field } = req.params
-  //  if (!store[field])
-  //    get_data(dir, field)
-  //      .then(data => res.end(JSON.stringify(store[field] = data)))
-  //      .catch(console.error)
-  //  else res.end(JSON.stringify(store[field]))
-  //})
-  //app.delete('/db/:field/:id', (req, res) => {
-  //  const { field, id } = req.params
-  //  if (store[field][req.params.id]) delete store[field][req.params.id]
-  //  write_data(dir, field)
-  //    .then(() => res.end(id))
-  //    .catch(() => res.status(500).end('Unable to write data - server error'))
-  //})
-  //app.put('/db/:field/:id', (req, res) => {
-  //  const { field, id } = req.params
-  //  store[field][id] = req.body
-  //  write_data(dir, field)
-  //    .then(() => res.end(id))
-  //    .catch(() => res.status(500).end('Unable to write data - server error'))
-  //})
+}
+onSubscribe(field, ws) {
+  if (!store[field])
+    this.get_data(field)
+      .then(data => {
+        ws.send(JSON.stringify({
+          type: 'subscription',
+          field: field,
+          data: store[field] = data,
+        }))
+      })
+      .catch(console.error)
+  else ws.send(JSON.stringify({
+    type: 'subscription',
+    field: field,
+    data: store[field],
+  }))
 }
 
-export function get_data(dir, field) {
-  const path = dir + '/' + field + '.json'
+onAdd(field, data) {
+  for(const id in data) {
+    store[field][id] = data[id]
+  }
+  this.write_data(field)
+    .catch(console.error)
+}
+
+onDelete(field, ids) {
+  ids.forEach(id => {
+    if (store[field][id]) delete store[field][id]
+  })
+  this.write_data(field)
+    .catch(console.error)
+}
+
+onUpdate(field, data) {
+  for(const id in data) {
+    store[field][id] = data[id]
+  }
+  this.write_data(field)
+    .catch(console.error)
+}
+write_data(field) {
+  const path = this.dir + '/' + field + '.json'
+  return fs.ensureFile(path)
+    .then(() => fs.writeJson(path, store[field]))
+}
+get_data(field) {
+  const path = this.dir + '/' + field + '.json'
   return fs.readJson(path)
     .catch(err => {
       if (err.code ===  'ENOENT')
@@ -56,10 +78,7 @@ export function get_data(dir, field) {
       return {}
     })
 }
-
-export function write_data(dir, field) {
-  const path = dir + '/' + field + '.json'
-  return fs.ensureFile(path)
-    .then(() => fs.writeJson(path, store[field]))
 }
+
+
 

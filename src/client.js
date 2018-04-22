@@ -1,24 +1,28 @@
 import { observable, action, extendObservable, observe, transaction, toJS } from 'mobx'
+import uuid from 'uuid/v4'
 import WS from './ws'
 
-const ws = new WS(`ws://${location.host}/obdb`)
-ws.on_msg(console.log)
-ws.send('hello')
-export const store = observable({
-  route: window.location.pathname,
-  maps: [],
-  subscribed: observable.map({}),
 
+const ws = new WS(`ws://${location.host}/obdb`)
+export const maps = []
+export const subscribed = observable.map({})
+export const store = observable({
   subscribe(field) {
     if (Array.isArray(field)) {
       return Promise.all(field.map(this.subscribe))
     }
-    if (store.subscribed.get(field)) return
-    store.subscribed.set(field, true)
+    if (subscribed.get(field)) return
+    subscribed.set(field, true)
     extendObservable(store, {
       [field]: []
     })
-    store.maps[field] = []
+    maps[field] = []
+    const msg = {
+      type: 'subscribe',
+      field,
+    }
+    ws.send(msg)
+
     //return fetch(`/db/${field}`)
     //  .then(res => res.json())
     //  .then(rows => {
@@ -37,57 +41,73 @@ export const store = observable({
     //  .catch(console.error)
   },
 })
+ws.on_msg(msg => {
+  if (msg.type === 'subscription') {
+    handle_subscription(msg.data, msg.field)
+  }
+})
+
+export function handle_subscription(rows, field) {
+  transaction(() => {
+    for (const id in rows) {
+      const val = rows[id]
+      maps[field].push(id)
+      store[field].push(rows[id])
+      if (Object(val) === val) {
+        mirror_obj(store[field][store[field].length - 1], id, field)
+      }
+    }
+  })
+  observe(store[field], mirror(field))
+}
 
 export function mirror(field){
   return event => {
     if (event.type === 'splice') {
-      event.added.forEach(add(field, event.index))
-      store.maps[field]
-        .splice(event.index, event.removedCount)
-        .forEach(remove(field))
+      add(field, event)
+      remove(field, event)
     } else {
       update(field, event.index)
     }
   }
 }
-export function add(field, main_index) {
-  return (value, i) => {
-    const is_json = value === Object(value)
-    fetch(`/db/${field}`, {
-      headers: new Headers({
-        'content-type': is_json ? 'application/json' : 'text/plain',
-      }),
-      method: 'POST',
-      body: (is_json) ? JSON.stringify(value) : value,
-    })
-      .then(res => res.text())
-      .then(id => {
-        store.maps[field].splice(main_index + i, 0, id)
-        mirror_obj(store[field][main_index + i], id, field)
-      })
-  }
+export function add(field, {added, index}) {
+  let data;
+  transaction(() => {
+    data = toJS(added).reduce((prev, cur, i) => {
+      const id = uuid()
+      prev[id] = cur
+      maps[field].splice(index + i, 0, id)
+      return prev
+        //mirror_obj(store[field][event.index + i], id, field)
+      }, {})
+  })
+
+  ws.send({
+    type: 'add',
+    field: field,
+    data,
+  })
 }
 
-export function remove(field) {
-  return key => {
-    fetch(`/db/${field}/${key}`, {
-      headers: new Headers({
-        'content-type': 'application/json',
-      }),
-      method: 'DELETE',
-    })
-  }
+export function remove(field, { index, removedCount }) {
+  const ids = maps[field].splice(index, removedCount)
+  ws.send({
+    type: 'delete',
+    ids,
+    field,
+  })
 }
 
 export function update(field, i) {
   const value = toJS(store[field][i])
-  const is_json = value === Object(value)
-  fetch(`/db/${field}/${store.maps[field][i]}`, {
-    headers: new Headers({
-      'content-type': is_json ? 'application/json' : 'text/plain',
-    }),
-    method: 'PUT',
-    body: (value === Object(value)) ? JSON.stringify(value) : value,
+  const id = uuid()
+  maps[field][i] = id
+
+  ws.send({
+    type: 'add',
+    field: field,
+    data: { [id]: value }
   })
 }
 
@@ -97,11 +117,15 @@ export function mirror_obj(obj, id, field) {
   })
 }
 export function update_obj(field, id, value) {
-  fetch(`/db/${field}/${id}`, {
-    headers: new Headers({
-      'content-type': 'application/json',
-    }),
-    method: 'PUT',
-    body: JSON.stringify(toJS(value)),
+  const data = {
+    [id]: toJS(value)
+  }
+  ws.send({
+    type: 'update',
+    field,
+    data,
   })
 }
+
+ws.on_msg(msg => {
+})
