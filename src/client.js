@@ -1,5 +1,9 @@
 import { observable, action, extendObservable, observe, transaction, toJS } from 'mobx'
+import WS from './ws'
 
+const ws = new WS(`ws://${location.host}/obdb`)
+ws.on_msg(console.log)
+ws.send('hello')
 export const store = observable({
   route: window.location.pathname,
   maps: [],
@@ -15,23 +19,22 @@ export const store = observable({
       [field]: []
     })
     store.maps[field] = []
-    return fetch(`/db/${field}`)
-      .then(res => res.json())
-      .then(rows => {
-        transaction(() => {
-          for (const id in rows) {
-            const val = rows[id]
-            console.log(id, val)
-            store.maps[field].push(id)
-            store[field].push(rows[id])
-            if (Object(val) === val) {
-              mirror_obj(store[field][store[field].length - 1], id, field)
-            }
-          }
-        })
-        observe(store[field], mirror(field))
-      })
-      .catch(console.error)
+    //return fetch(`/db/${field}`)
+    //  .then(res => res.json())
+    //  .then(rows => {
+    //    transaction(() => {
+    //      for (const id in rows) {
+    //        const val = rows[id]
+    //        store.maps[field].push(id)
+    //        store[field].push(rows[id])
+    //        if (Object(val) === val) {
+    //          mirror_obj(store[field][store[field].length - 1], id, field)
+    //        }
+    //      }
+    //    })
+    //    observe(store[field], mirror(field))
+    //  })
+    //  .catch(console.error)
   },
 })
 
