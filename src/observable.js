@@ -3,6 +3,11 @@ import uuid from 'uuid/v4'
 
 export function observable_decorator(target, name, description) {
   let val = description.initializer()
+  if (typeof val === 'object' && !Array.isArray(val)) {
+    val = observable(val)
+  } else {
+    val = new_value
+  }
   const id = uuid()
   return {
     get() {
@@ -28,12 +33,13 @@ export function observable(...args) {
   let values = {}
   let ids = {}
 
-  const proxy = new Proxy({}, {
+  const proxy = new Proxy(args[0], {
     get(obj, prop) {
       const id = ids[prop] || (ids[prop] = uuid())
       report_retrieved(id)
       return values[prop]
     },
+
     set(obj, prop, val) {
       const id = ids[prop] || (ids[prop] = uuid())
       report_retrieved(id)
@@ -42,7 +48,10 @@ export function observable(...args) {
       return values[prop]
     }
   })
-
+  for (const prop in ids) {
+    reportObserved(ids[prop])
+  }
+  return proxy
 }
 
 

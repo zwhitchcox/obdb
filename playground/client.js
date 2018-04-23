@@ -27,6 +27,7 @@ const get_blank_person = () => ({
   render() {
     return <MuiThemeProvider>
       <div>
+        {this.new_person.name}
         <form onSubmit={this.add_person}>
           <TextField onChange={e => this.new_person.name = e.target.value} value={this.new_person.name} floatingLabelText="Name" fullWidth={true} /><br />
           <TextField onChange={e => this.new_person.age = e.target.value} value={this.new_person.age} floatingLabelText="Age" fullWidth={true} /><br />
