@@ -25,7 +25,6 @@ const get_blank_person = () => ({
     this.new_person = toJS(this.new_person) //get_blank_person()
   }
   render() {
-    this.new_person = 'test'
     return <MuiThemeProvider>
       <div>
         <form onSubmit={this.add_person}>

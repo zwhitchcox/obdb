@@ -1,8 +1,8 @@
 import { report_observed, report_changed } from './observations'
 import uuid from 'uuid/v4'
 
-export function observable_decorator(target, name, descriptor) {
-  let val = descriptor.initializer()
+export function observable_decorator(target, name, description) {
+  let val = description.initializer()
   const id = uuid()
   return {
     get() {
@@ -20,13 +20,21 @@ export function observable_decorator(target, name, descriptor) {
 
 export function observable(...args) {
   if(quacksLikeADecorator(args)) return observable_decorator(...args)
+  let values = {}
+  let ids = {}
 
   const proxy = new Proxy({}, {
     get(obj, prop) {
-
+      const id = ids[prop] || (ids[prop] = uuid())
+      reportObserved(id)
+      return values[prop]
     },
     set(obj, prop, val) {
-
+      const id = ids[prop] || (ids[prop] = uuid())
+      reportObserved(id)
+      values[prop] = val
+      reportChanged(id)
+      return values[prop]
     }
   })
 
