@@ -9,6 +9,7 @@ import { store } from '../src/client'
 import { observer } from '../src/observer'
 import { observable } from '../src/observable'
 
+
 const get_blank_person = () => ({
   name: "",
   age: "",
@@ -16,16 +17,16 @@ const get_blank_person = () => ({
 })
 @observer export default class App extends React.Component {
   @observable new_person = get_blank_person()
+  @observable people = []
   componentWillMount() {
     //store.subscribe('people', [])
   }
   add_person = e => {
     e.preventDefault()
-    store.people.push(this.new_person)
-    this.new_person = toJS(this.new_person) //get_blank_person()
+    this.people.push(this.new_person)
+    this.new_person = JSON.parse(JSON.stringify(this.new_person)) //get_blank_person()
   }
   render() {
-    console.log('name', this.new_person.name)
     return <MuiThemeProvider>
       <div>
         {this.new_person.name}
@@ -53,14 +54,14 @@ const get_blank_person = () => ({
             </TableRow>
           </TableHeader>
           <TableBody displayRowCheckbox={false}>
-            {[].map((person, i) => <TableRow key={i} selectable={false}>
+            {this.people.map((person, i) => <TableRow key={i} selectable={false}>
               <TableRowColumn>
                 <TextField onChange={e => (person.name = e.target.value)} name="Name" value={person.name} fullWidth={true} />
               </TableRowColumn>
               <TableRowColumn>{person.age}</TableRowColumn>
               <TableRowColumn>{person.race}</TableRowColumn>
               <TableRowColumn>
-                <RaisedButton onClick={() =>store.people.splice(i, 1)}>Delete</RaisedButton>
+                <RaisedButton onClick={() =>this.people.splice(i, 1)}>Delete</RaisedButton>
               </TableRowColumn>
           </TableRow>)}
         </TableBody>

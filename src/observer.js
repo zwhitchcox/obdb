@@ -2,6 +2,7 @@ import { watch } from './observations'
 
 export function observer(componentClass) {
 
+  // taken from mobx observer
   if (
     typeof componentClass === "function" &&
     (!componentClass.prototype || !componentClass.prototype.render) &&

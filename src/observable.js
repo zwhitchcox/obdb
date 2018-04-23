@@ -3,10 +3,8 @@ import uuid from 'uuid/v4'
 
 export function observable_decorator(target, name, description) {
   let val = description.initializer()
-  if (typeof val === 'object' && !Array.isArray(val)) {
+  if (typeof val === 'object') {
     val = observable(val)
-  } else {
-    val = new_value
   }
   const id = uuid()
   return {
@@ -15,12 +13,14 @@ export function observable_decorator(target, name, description) {
       return val
     },
     set(new_value) {
-      if (typeof val === 'object' && !Array.isArray(val)) {
+      console.log(new_value)
+      if (typeof val === 'object') {
         val = observable(new_value)
       } else {
         val = new_value
       }
       report_changed(id)
+      console.log('changed', id)
       return val
     },
     enumerable: true,
@@ -30,32 +30,67 @@ export function observable_decorator(target, name, description) {
 
 export function observable(...args) {
   if(quacksLikeADecorator(args)) return observable_decorator(...args)
-  let values = {}
+  const original = args[0]
+  let values = Array.isArray(original) ? [] : {}
   let ids = {}
 
-  const proxy = new Proxy({}, {
-    get(obj, prop) {
+  const proxy = new Proxy(Array.isArray(original) ? [] : {}, {
+    get(target, prop) {
       const id = ids[prop] || (ids[prop] = uuid())
       report_retrieved(id)
       return values[prop]
     },
 
-    set(obj, prop, new_val) {
+    set(target, prop, new_val) {
       if (values[prop] === new_val) return values[prop]
       const id = ids[prop] || (ids[prop] = uuid())
       values[prop] = new_val
       report_changed(id)
       return values[prop]
-    }
+    },
+    deleteProperty (target, key) {
+      delete values[key]
+      report_changed(ids[key])
+      delete ids[key]
+      return true
+    },
+    enumerate(target, key) {
+      for(const id in ids)
+        report_retrieved(id)
+      return Object.keys(values)
+    },
+    ownKeys(target, key) {
+      for(const id in ids)
+        report_retrieved(id)
+      return Object.keys(values)
+    },
+    has(target, key) {
+      return key in values || target.hasItem(key);
+    },
+    defineProperty(target, key, oDesc) {
+      if (oDesc && 'value' in oDesc) { values[key] = oDesc.value }
+      return target
+    },
+    getOwnPropertyDescriptor(target, key) {
+      var vValue = values[key]
+      return vValue ? {
+        value: vValue,
+        writable: true,
+        enumerable: true,
+        configurable: true
+      } : undefined
+    },
   })
-  for (const prop in ids) {
-    reportObserved(ids[prop])
-  }
+
   untracked(_ => {
-    for (const prop in args[0]) {
-      values[prop] = args[0][prop]
+    for (const prop in original) {
+      values[prop] = original[prop]
     }
   })
+
+  for (const prop in ids) {
+    report_retrieved(ids[prop])
+  }
   return proxy
 }
 
