@@ -6,8 +6,8 @@ import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
 import { Table, TableBody, TableHeader, TableHeaderColumn, TableRow, TableRowColumn } from 'material-ui/Table'
 import { Paper, TextField, RaisedButton, DropDownMenu, MenuItem } from 'material-ui'
 import { store } from '../src/client'
-import { observable, toJS } from 'mobx'
-import { observer } from 'mobx-react'
+import { observer } from '../src/observer'
+import { observable } from '../src/observable'
 
 const get_blank_person = () => ({
   name: "",
@@ -17,7 +17,7 @@ const get_blank_person = () => ({
 @observer export default class App extends React.Component {
   @observable new_person = get_blank_person()
   componentWillMount() {
-    store.subscribe('people', [])
+    //store.subscribe('people', [])
   }
   add_person = e => {
     e.preventDefault()
@@ -25,6 +25,7 @@ const get_blank_person = () => ({
     this.new_person = toJS(this.new_person) //get_blank_person()
   }
   render() {
+    this.new_person = 'test'
     return <MuiThemeProvider>
       <div>
         <form onSubmit={this.add_person}>
@@ -51,7 +52,7 @@ const get_blank_person = () => ({
             </TableRow>
           </TableHeader>
           <TableBody displayRowCheckbox={false}>
-            {store.people.map((person, i) => <TableRow key={i} selectable={false}>
+            {[].map((person, i) => <TableRow key={i} selectable={false}>
               <TableRowColumn>
                 <TextField onChange={e => (person.name = e.target.value)} name="Name" value={person.name} fullWidth={true} />
               </TableRowColumn>
