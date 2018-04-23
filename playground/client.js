@@ -25,6 +25,7 @@ const get_blank_person = () => ({
     this.new_person = toJS(this.new_person) //get_blank_person()
   }
   render() {
+    console.log('name', this.new_person.name)
     return <MuiThemeProvider>
       <div>
         {this.new_person.name}

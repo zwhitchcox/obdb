@@ -1,6 +1,7 @@
 import uuid from 'uuid/v4'
 
 const noop = _ => {}
+let tracking = true
 let cur_watcher = noop
 export function report_retrieved(id) {
   cur_watcher(id)
@@ -29,3 +30,9 @@ export function watch(fn, reaction, reaction_id) {
 
 export const reactions = {}
 export const reactions_for_id = {}
+
+export function untracked(fn) {
+  tracking = false
+  fn()
+  tracking = true
+}

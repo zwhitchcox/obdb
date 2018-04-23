@@ -36,9 +36,11 @@ export function observer(componentClass) {
 }
 
 function componentWillMount() {
-  const baseRender = this.render.bind(this)
-  this.render = () => {
-    const rendering = watch(baseRender, (...args) => console.log('updating') || this.forceUpdate.bind(this)(...args))
+  const base_render = this.render.bind(this)
+  const initial_render = function() {
+    const rendering = watch(base_render, this.forceUpdate.bind(this))
+    this.render = base_render
     return rendering
   }
+  this.render = initial_render
 }
