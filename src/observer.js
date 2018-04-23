@@ -1,3 +1,5 @@
+import { watch } from './observations'
+
 export function observer(componentClass) {
 
   if (
@@ -26,18 +28,19 @@ export function observer(componentClass) {
   const target = componentClass.prototype || componentClass
 
   const original_componentWillMount = componentClass.componentWillMount || (_ => {})
-  componentClass.componentWillMount = () => {
+  target.componentWillMount = function () {
     componentWillMount.apply(this, arguments)
     original_componentWillMount.apply(this, arguments)
-
   }
+  console.log(componentClass)
   return componentClass
 }
 
 function componentWillMount() {
   const baseRender = this.render.bind(this)
   this.render = () => {
-    const rendering = baseRender()
+    const [rendering, ids] = watch(baseRender)
+    console.log('ids', ids)
     return rendering
   }
 }

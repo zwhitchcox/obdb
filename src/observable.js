@@ -1,4 +1,4 @@
-import { report_observed, report_changed } from './observations'
+import { report_retrieved, report_changed } from './observations'
 import uuid from 'uuid/v4'
 
 export function observable_decorator(target, name, description) {
@@ -6,12 +6,17 @@ export function observable_decorator(target, name, description) {
   const id = uuid()
   return {
     get() {
-      report_observed
+      report_retrieved(id)
       return val
     },
     set(new_value) {
+      if (typeof val === 'object' && !Array.isArray(val)) {
+        val = observable(new_value)
+      } else {
+        val = new_value
+      }
       report_changed(id)
-      val = new_value
+      return val
     },
     enumerable: true,
     configurable: true
@@ -26,14 +31,14 @@ export function observable(...args) {
   const proxy = new Proxy({}, {
     get(obj, prop) {
       const id = ids[prop] || (ids[prop] = uuid())
-      reportObserved(id)
+      report_retrieved(id)
       return values[prop]
     },
     set(obj, prop, val) {
       const id = ids[prop] || (ids[prop] = uuid())
-      reportObserved(id)
+      report_retrieved(id)
       values[prop] = val
-      reportChanged(id)
+      report_changed(id)
       return values[prop]
     }
   })
