@@ -24,6 +24,7 @@ export class Obdb {
     })
   }
   onArraySubscribe(field, ws) {
+    console.log('subscribed')
     if (!store[field])
       this.get_data(field)
         .then(data => {

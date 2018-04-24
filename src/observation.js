@@ -4,12 +4,10 @@ const noop = _ => {}
 let tracking = true
 let cur_watcher = noop
 export function report_retrieved(id) {
-  console.log('retrieved ' + id)
   cur_watcher(id)
 }
 
 export function report_changed(id) {
-  console.log('changed ' + id)
   //if (noop !== cur_watcher) return console.error('can\'t change during reaction')
   const cur_reactions = reactions_for_id[id]
   for (const reaction_id in cur_reactions) {
@@ -25,9 +23,7 @@ export function watch(fn, reaction, reaction_id) {
   cur_watcher = observed_id => {
     (reactions_for_id[observed_id] || (reactions_for_id[observed_id] = {}))[reaction_id] = true
   }
-  console.log('watching' + reaction_id)
   const return_val = fn()
-  console.log('stop watching' + reaction_id)
   cur_watcher = prev_watcher
   return return_val
 }
@@ -39,4 +35,8 @@ export function untracked(fn) {
   tracking = false
   fn()
   tracking = true
+}
+
+export function transaction(fn) {
+  fn()
 }

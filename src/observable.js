@@ -1,4 +1,4 @@
-import { report_retrieved, report_changed, untracked } from './observations'
+import { report_retrieved, report_changed, untracked } from './observation'
 import uuid from 'uuid/v4'
 
 export function observable_decorator(target, name, description) {
@@ -13,7 +13,6 @@ export function observable_decorator(target, name, description) {
       return val
     },
     set(new_value) {
-      console.log('set decorator')
       if (typeof val === 'object') {
         val = observable(new_value)
       } else {
@@ -34,18 +33,18 @@ export function observable(...args) {
   let ids = {}
 
   const proxy = new Proxy(Array.isArray(original) ? [] : {}, {
-    get(target, prop) {
-      const id = ids[prop] || (ids[prop] = prop + uuid())
+    get(target, key) {
+      const id = ids[key] || (ids[key] = key + uuid())
       report_retrieved(id)
-      return values[prop]
+      return values[key]
     },
 
-    set(target, prop, new_val) {
-      if (values[prop] === new_val) return values[prop]
-      const id = ids[prop] || (ids[prop] = prop + uuid())
-      values[prop] = new_val
+    set(target, key, new_val) {
+      if (values[key] === new_val) return values[key]
+      const id = ids[key] || (ids[key] = key + uuid())
+      values[key] = new_val
       report_changed(id)
-      return values[prop]
+      return values[key]
     },
     deleteProperty (target, key) {
       delete values[key]
@@ -82,8 +81,8 @@ export function observable(...args) {
   })
 
   untracked(_ => {
-    for (const prop in original) {
-      values[prop] = original[prop]
+    for (const key in original) {
+      values[key] = original[key]
     }
   })
 
@@ -100,3 +99,4 @@ export function quacksLikeADecorator(args) {
     (args.length === 4 && args[3] === true)
   )
 }
+

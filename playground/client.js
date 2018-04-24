@@ -19,7 +19,8 @@ const get_blank_person = () => ({
   @observable new_person = get_blank_person()
   @observable people = []
   componentWillMount() {
-    //store.subscribe('people', [])
+    console.log('mount')
+    store.subscribe('people', [])
   }
   add_person = e => {
     e.preventDefault()

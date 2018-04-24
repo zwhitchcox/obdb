@@ -1,32 +1,27 @@
-import { observable, action, extendObservable, observe, transaction, toJS } from 'mobx'
 import uuid from 'uuid/v4'
 import WS from './ws'
+import { observable, transaction } from './obdb'
 
 
 const ws = new WS(`ws://${location.host}/obdb`)
 export const maps = []
-export const subscribed = observable.map({})
+export const subscribed = {}
 export const store = observable({
   subscribe(field, type = {}) {
-    if (subscribed.get(field)) return
-    subscribed.set(field, true)
+    if (Array.isArray(field)) {
+      return Promise.all(field.map(field => this.subscribe(field)))
+    }
+    if (subscribed[field]) return
+    subscribed[field] = true
 
     if (Array.isArray(type)) {
-      if (Array.isArray(field)) {
-        return Promise.all(field.map(field => this.subscribe(field, [])))
-      }
-      extendObservable(store, {
-        [field]: [],
-      })
-      maps[field] = []
+      store[field] = observable([])
       ws.send({
         type: 'array_subscribe',
         field,
       })
     } else if (typeof type === 'object') {
-      extendObservable(store, {
-        [field]: {},
-      })
+      store[field] = observable({})
       ws.send({
         type: 'object_subscribe',
         field,
@@ -38,7 +33,7 @@ ws.on_msg(msg => {
   if (msg.type === 'array_subscription') {
     array_handle_subscription(msg.data, msg.field)
   } else if (msg.type === 'object_subscription') {
-
+    object_handle_subscription(msg.data, msg.field)
   }
 })
 
@@ -46,14 +41,9 @@ export function array_handle_subscription(rows, field) {
   transaction(() => {
     for (const id in rows) {
       const val = rows[id]
-      maps[field].push(id)
       store[field].push(rows[id])
-      if (Object(val) === val) {
-        mirror_obj(store[field][store[field].length - 1], id, field)
-      }
     }
   })
-  observe(store[field], array_mirror(field))
 }
 
 export function array_mirror(field){
