@@ -3,24 +3,23 @@ import uuid from 'uuid/v4'
 
 export function observable_decorator(target, name, description) {
   let val = description.initializer()
+  const id = name + uuid()
   if (typeof val === 'object') {
     val = observable(val)
   }
-  const id = uuid()
   return {
     get() {
       report_retrieved(id)
       return val
     },
     set(new_value) {
-      console.log(new_value)
+      console.log('set decorator')
       if (typeof val === 'object') {
         val = observable(new_value)
       } else {
         val = new_value
       }
       report_changed(id)
-      console.log('changed', id)
       return val
     },
     enumerable: true,
@@ -36,14 +35,14 @@ export function observable(...args) {
 
   const proxy = new Proxy(Array.isArray(original) ? [] : {}, {
     get(target, prop) {
-      const id = ids[prop] || (ids[prop] = uuid())
+      const id = ids[prop] || (ids[prop] = prop + uuid())
       report_retrieved(id)
       return values[prop]
     },
 
     set(target, prop, new_val) {
       if (values[prop] === new_val) return values[prop]
-      const id = ids[prop] || (ids[prop] = uuid())
+      const id = ids[prop] || (ids[prop] = prop + uuid())
       values[prop] = new_val
       report_changed(id)
       return values[prop]
@@ -88,8 +87,8 @@ export function observable(...args) {
     }
   })
 
-  for (const prop in ids) {
-    report_retrieved(ids[prop])
+  for (const key in values) {
+    proxy[key]
   }
   return proxy
 }

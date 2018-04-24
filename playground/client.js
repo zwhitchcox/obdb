@@ -24,7 +24,7 @@ const get_blank_person = () => ({
   add_person = e => {
     e.preventDefault()
     this.people.push(this.new_person)
-    this.new_person = JSON.parse(JSON.stringify(this.new_person)) //get_blank_person()
+    this.new_person = get_blank_person()
   }
   render() {
     return <MuiThemeProvider>

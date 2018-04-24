@@ -1,4 +1,5 @@
 import { watch } from './observations'
+import uuid from 'uuid/v4'
 
 export function observer(componentClass) {
 
@@ -29,19 +30,27 @@ export function observer(componentClass) {
   const target = componentClass.prototype || componentClass
 
   const original_componentWillMount = componentClass.componentWillMount || (_ => {})
+  const original_componentWillUnmount = componentClass.componentWillUnmount || (_ => {})
   target.componentWillMount = function () {
     componentWillMount.apply(this, arguments)
     original_componentWillMount.apply(this, arguments)
+  }
+  target.componentWillUnmount = function () {
+    original_componentWillUnmount.apply(this, arguments)
+    componentWillUnmount.apply(this, arguments)
   }
   return componentClass
 }
 
 function componentWillMount() {
   const base_render = this.render.bind(this)
-  const initial_render = function() {
-    const rendering = watch(base_render, this.forceUpdate.bind(this))
-    this.render = base_render
-    return rendering
+  const reaction_id = uuid()
+  Object.defineProperty('$obdb_reaction_id', {
+    value: reaction_id,
+    enumerable: false,
+    configurable: false,
+  })
+  this.render = () => {
+    return watch(base_render, this.forceUpdate.bind(this), reaction_id)
   }
-  this.render = initial_render
 }
