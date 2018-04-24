@@ -29,11 +29,14 @@ export function observable_decorator(target, name, description) {
 export function observable(...args) {
   if(quacksLikeADecorator(args)) return observable_decorator(...args)
   const original = args[0]
+  if (original !== Object(original) || original.__isProxy)
+    return original
   let values = Array.isArray(original) ? [] : {}
   let ids = {}
 
   const proxy = new Proxy(Array.isArray(original) ? [] : {}, {
     get(target, key) {
+      if(key === '__isProxy') return true
       const id = ids[key] || (ids[key] = key + uuid())
       report_retrieved(id)
       return values[key]
@@ -42,7 +45,7 @@ export function observable(...args) {
     set(target, key, new_val) {
       if (values[key] === new_val) return values[key]
       const id = ids[key] || (ids[key] = key + uuid())
-      values[key] = new_val
+      values[key] = observable(new_val)
       report_changed(id)
       return values[key]
     },
