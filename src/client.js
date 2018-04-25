@@ -16,11 +16,8 @@ export function subscribe(field, type = {}) {
   subscribed[field] = true
 
   if (Array.isArray(type)) {
-    console.log('store[field]', store[field])
     untracked(() => {
-      console.log('store[field]', store[field])
       store[field] = observable([])
-      console.log('store[field]', store[field])
     })
     ws.send({
       type: 'array_subscribe',
@@ -38,19 +35,37 @@ export function subscribe(field, type = {}) {
 }
 ws.on_msg(msg => {
   if (msg.type === 'array_subscription') {
-    array_handle_subscription(msg.data, msg.field)
+    store[msg.field] = mirrored_observable(msg.data, msg.field, [])
   } else if (msg.type === 'object_subscription') {
     object_handle_subscription(msg.data, msg.field)
   }
 })
 
-export function array_handle_subscription(rows, field) {
-  transaction(() => {
-    for (const id in rows) {
-      const val = rows[id]
-      store[field].push(val)
+export const obdb_ids = {}
+
+export function mirrored_observable(obj, field, type = {}) {
+  const is_array = Array.isArray(type)
+  let is_new;
+  const proxy =  new Proxy(type, {
+    get(target, key, receiver) {
+      console.log('get mirrored key', key)
+      return Reflect.get(target, key, receiver)
+    },
+    set(target, key, new_val, receiver) {
+      console.log('set mirrored key, new_val', key, new_val)
+      ids[key] = ids[key] || cur_key || (is_new = true) && uuid()
+      return Reflect.set(target, key, new_val, receiver)
     }
   })
+  const ids = {}
+  let cur_key;
+  if (is_array) {
+    for(const key in obj) {
+      cur_key = key
+      store[field].push(obj[key])
+    }
+  }
+  return proxy
 }
 
 export function array_mirror(field){

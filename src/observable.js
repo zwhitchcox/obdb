@@ -49,6 +49,7 @@ export function observable(...args) {
 
   const proxy = new Proxy(original, {
     get(target, key, receiver) {
+      console.log('get key', key)
       if(key === '__isProxy') return true
       let id;
       id = (typeof ids[key]==='function' && key + uuid()) || ids[key] || (ids[key] = key + uuid())
@@ -64,6 +65,7 @@ export function observable(...args) {
     },
 
     set(target, key, new_val, receiver) {
+      console.log('key,new_val', key,new_val)
       if (target[key] === new_val) return target[key]
       let id;
       if(key === 'length') id = (length = key + uuid())
