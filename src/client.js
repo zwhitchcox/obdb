@@ -41,30 +41,41 @@ ws.on_msg(msg => {
   }
 })
 
-export const obdb_ids = {}
 
 export function mirrored_observable(obj, field, type = {}) {
   const is_array = Array.isArray(type)
   let is_new;
+  let mapping;
+  let cur_key;
   const proxy =  new Proxy(type, {
     get(target, key, receiver) {
-      console.log('get mirrored key', key)
+      if ('__isMirroredProxy' === key) return true
       return Reflect.get(target, key, receiver)
     },
     set(target, key, new_val, receiver) {
-      console.log('set mirrored key, new_val', key, new_val)
-      ids[key] = ids[key] || cur_key || (is_new = true) && uuid()
+      const id = uuid()
+      if (mapping) {
+        key_map[id] = cur_key
+      } else {
+        ws.send({
+          type: 'array_add',
+          field,
+          data: {[id]: new_val},
+        })
+      }
       return Reflect.set(target, key, new_val, receiver)
     }
   })
+  const key_map = {}
   const ids = {}
-  let cur_key;
+  mapping = true
   if (is_array) {
     for(const key in obj) {
       cur_key = key
       store[field].push(obj[key])
     }
   }
+  mapping = false
   return proxy
 }
 
@@ -78,23 +89,7 @@ export function array_mirror(field){
     }
   }
 }
-export function array_add(field, {added, index}) {
-  let data;
-  transaction(() => {
-    data = toJS(added).reduce((prev, cur, i) => {
-      const id = uuid()
-      prev[id] = cur
-      maps[field].splice(index + i, 0, id)
-      mirror_obj(store[field][index + i], id, field)
-      return prev
-      }, {})
-  })
-
-  ws.send({
-    type: 'array_add',
-    field: field,
-    data,
-  })
+export function array_add(field, ) {
 }
 
 export function array_remove(field, { index, removedCount }) {
