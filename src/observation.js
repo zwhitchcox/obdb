@@ -8,6 +8,7 @@ export function report_retrieved(id) {
 }
 
 export function report_changed(id) {
+  if(!tracking) return
   //if (noop !== cur_watcher) return console.error('can\'t change during reaction')
   const cur_reactions = reactions_for_id[id]
   for (const reaction_id in cur_reactions) {

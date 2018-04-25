@@ -51,6 +51,9 @@ function componentWillMount() {
     configurable: false,
   })
   this.render = () => {
-    return watch(base_render, this.forceUpdate.bind(this), reaction_id)
+    console.log('%c start_rendering', 'background:#222;color: white;')
+    const rendering = watch(base_render, this.forceUpdate.bind(this), reaction_id)
+    console.log('%c end_rendering', 'background:#222;color: white;')
+    return rendering
   }
 }

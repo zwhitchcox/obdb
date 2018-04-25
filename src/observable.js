@@ -1,5 +1,4 @@
 import { report_retrieved, report_changed, untracked } from './observation'
-import { array_methods } from './array_methods'
 import uuid from 'uuid/v4'
 
 export function observable_decorator(target, name, description) {
@@ -27,72 +26,55 @@ export function observable_decorator(target, name, description) {
   }
 }
 
+export const mutating_array_methods = {
+  copyWithin: true,
+  fill: true,
+  pop: true,
+  push: true,
+  reverse: true,
+  shift: true,
+  sort: true,
+  splice: true,
+  unshift: true,
+}
+
 export function observable(...args) {
   if(quacksLikeADecorator(args)) return observable_decorator(...args)
   const original = args[0]
   if (original !== Object(original) || original.__isProxy)
     return original
   let is_array = Array.isArray(original)
-  let values = is_array ? [] : {}
   let ids = {}
+  
 
-  const proxy = new Proxy([], {
+  const proxy = new Proxy(original, {
     get(target, key, receiver) {
       if(key === '__isProxy') return true
-      if(is_array && key in array_methods) return target[key].bind(this)
-      const id = ids[key] || (ids[key] = key + uuid())
+      let id;
+      id = (typeof ids[key]==='function' && key + uuid()) || ids[key] || (ids[key] = key + uuid())
       report_retrieved(id)
-      return values[key]
+      if(key in mutating_array_methods && is_array) {
+        const method = Reflect.get(target, key, receiver)
+        return function(...args) {
+          method.apply(target, args)
+          report_changed(ids.length)
+        }
+      }
+      return Reflect.get(target, key, receiver)
     },
 
-    set(target, key, new_val) {
-      if (values[key] === new_val) return values[key]
-      const id = ids[key] || (ids[key] = key + uuid())
-      values[key] = observable(new_val)
+    set(target, key, new_val, receiver) {
+      if (target[key] === new_val) return target[key]
+      let id;
+      if(key === 'length') id = (length = key + uuid())
+      id = id || ids[key] || (ids[key] = key + uuid())
       report_changed(id)
-      return values[key]
-    },
-    deleteProperty (target, key) {
-      delete values[key]
-      report_changed(ids[key])
-      delete ids[key]
-      return true
-    },
-    enumerate(target, key) {
-      for(const id in ids)
-        report_retrieved(id)
-      return Object.keys(values)
-    },
-    ownKeys(target, key) {
-      for(const id in ids)
-        report_retrieved(id)
-      return Object.keys(values)
-    },
-    has(target, key) {
-      return key in values || target.hasItem(key);
-    },
-    defineProperty(target, key, oDesc) {
-      if (oDesc && 'value' in oDesc) { values[key] = oDesc.value }
-      return target
-    },
-    getOwnPropertyDescriptor(target, key) {
-      var vValue = values[key]
-      return vValue ? {
-        value: vValue,
-        writable: true,
-        enumerable: true,
-        configurable: true
-      } : undefined
+      return Reflect.set(target, key, observable(new_val), receiver)
     },
   })
 
-  untracked(_ => {
-    for (const key in original) {
-      values[key] = original[key]
-    }
-  })
 
-  for (const key in values) {
+  for (const key in original) {
     proxy[key]
   }
   return proxy

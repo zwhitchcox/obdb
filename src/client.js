@@ -1,34 +1,41 @@
 import uuid from 'uuid/v4'
 import WS from './ws'
-import { observable, transaction } from './obdb'
+import { observable, transaction, untracked } from './obdb'
 
 
 const ws = new WS(`ws://${location.host}/obdb`)
 export const maps = []
 export const subscribed = {}
 export const store = observable({
-  subscribe(field, type = {}) {
-    if (Array.isArray(field)) {
-      return Promise.all(field.map(field => this.subscribe(field)))
-    }
-    if (subscribed[field]) return
-    subscribed[field] = true
-
-    if (Array.isArray(type)) {
-      store[field] = observable([])
-      ws.send({
-        type: 'array_subscribe',
-        field,
-      })
-    } else if (typeof type === 'object') {
-      store[field] = observable({})
-      ws.send({
-        type: 'object_subscribe',
-        field,
-      })
-    }
-  },
 })
+export function subscribe(field, type = {}) {
+  if (Array.isArray(field)) {
+    return Promise.all(field.map(field => this.subscribe(field)))
+  }
+  if (subscribed[field]) return
+  subscribed[field] = true
+
+  if (Array.isArray(type)) {
+    console.log('store[field]', store[field])
+    untracked(() => {
+      console.log('store[field]', store[field])
+      store[field] = observable([])
+      console.log('store[field]', store[field])
+    })
+    ws.send({
+      type: 'array_subscribe',
+      field,
+    })
+  } else if (typeof type === 'object') {
+    untracked(() => {
+      store[field] = observable({})
+    })
+    ws.send({
+      type: 'object_subscribe',
+      field,
+    })
+  }
+}
 ws.on_msg(msg => {
   if (msg.type === 'array_subscription') {
     array_handle_subscription(msg.data, msg.field)

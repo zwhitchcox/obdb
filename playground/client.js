@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom'
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
 import { Table, TableBody, TableHeader, TableHeaderColumn, TableRow, TableRowColumn } from 'material-ui/Table'
 import { Paper, TextField, RaisedButton, DropDownMenu, MenuItem } from 'material-ui'
-import { store } from '../src/client'
+import { store, subscribe } from '../src/client'
 import { observer } from '../src/observer'
 import { observable } from '../src/observable'
 
@@ -19,12 +19,11 @@ const get_blank_person = () => ({
   @observable new_person = get_blank_person()
   @observable people = []
   componentWillMount() {
-    console.log('mount')
-    store.subscribe('people', [])
+    subscribe('people', [])
   }
   add_person = e => {
     e.preventDefault()
-    this.people.push(this.new_person)
+    store.people.push(this.new_person)
     this.new_person = get_blank_person()
   }
   render() {
@@ -55,14 +54,14 @@ const get_blank_person = () => ({
             </TableRow>
           </TableHeader>
           <TableBody displayRowCheckbox={false}>
-            {this.people.map((person, i) => <TableRow key={i} selectable={false}>
+            {store.people.map((person, i) => <TableRow key={i} selectable={false}>
               <TableRowColumn>
                 <TextField onChange={e => (person.name = e.target.value)} name="Name" value={person.name} fullWidth={true} />
               </TableRowColumn>
               <TableRowColumn>{person.age}</TableRowColumn>
               <TableRowColumn>{person.race}</TableRowColumn>
               <TableRowColumn>
-                <RaisedButton onClick={() =>this.people.splice(i, 1)}>Delete</RaisedButton>
+                <RaisedButton onClick={() =>store.people.splice(i, 1)}>Delete</RaisedButton>
               </TableRowColumn>
           </TableRow>)}
         </TableBody>
