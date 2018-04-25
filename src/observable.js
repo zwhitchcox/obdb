@@ -1,4 +1,5 @@
 import { report_retrieved, report_changed, untracked } from './observation'
+import { array_methods } from './array_methods'
 import uuid from 'uuid/v4'
 
 export function observable_decorator(target, name, description) {
@@ -31,12 +32,14 @@ export function observable(...args) {
   const original = args[0]
   if (original !== Object(original) || original.__isProxy)
     return original
-  let values = Array.isArray(original) ? [] : {}
+  let is_array = Array.isArray(original)
+  let values = is_array ? [] : {}
   let ids = {}
 
-  const proxy = new Proxy(Array.isArray(original) ? [] : {}, {
-    get(target, key) {
+  const proxy = new Proxy([], {
+    get(target, key, receiver) {
       if(key === '__isProxy') return true
+      if(is_array && key in array_methods) return target[key].bind(this)
       const id = ids[key] || (ids[key] = key + uuid())
       report_retrieved(id)
       return values[key]
@@ -94,7 +97,6 @@ export function observable(...args) {
   }
   return proxy
 }
-
 
 export function quacksLikeADecorator(args) {
   return (

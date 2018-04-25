@@ -41,7 +41,7 @@ export function array_handle_subscription(rows, field) {
   transaction(() => {
     for (const id in rows) {
       const val = rows[id]
-      store[field].push(rows[id])
+      store[field].push(val)
     }
   })
 }
