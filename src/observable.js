@@ -1,4 +1,4 @@
-import { report_retrieved, report_changed, untracked } from './observation'
+import { report_retrieved, report_changed, untracked, transaction } from './observation'
 import uuid from 'uuid/v4'
 
 export function observable_decorator(target, name, description) {
@@ -39,45 +39,74 @@ export const mutating_array_methods = {
 }
 
 export function observable(...args) {
-  if(quacksLikeADecorator(args)) return observable_decorator(...args)
   const original = args[0]
+  const is_obdb = !!original.__obdb
+  if(quacksLikeADecorator(args) && !is_obdb) return observable_decorator(...args)
+
   if (original !== Object(original) || original.__isProxy)
     return original
-  let is_array = Array.isArray(original)
-  let ids = {}
-  
+  const is_array = Array.isArray(original)
+  const fn_ids = {}
+  const obdb_ids = is_obdb ? Object.assign({}, original.__obdb.data) : {}
+  const ids = is_obdb ? Object.assign({}, original.__obdb.data) : {}
+  let array;
+  if (is_obdb && (array = [])) {
+    for (const key in original.__obdb.data) {
+      array.push(original.__obdb.data[key])
+    }
+  }
 
-  const proxy = new Proxy(original, {
+  const proxy = new Proxy(array || original, {
     get(target, key, receiver) {
-      console.log('get key', key)
       if(key === '__isProxy') return true
       let id;
-      id = (typeof ids[key]==='function' && key + uuid()) || ids[key] || (ids[key] = key + uuid())
+      id = (typeof ids[key]==='function' &&  key + uuid()) || ids[key] || (ids[key] = key + uuid())
       report_retrieved(id)
       if(key in mutating_array_methods && is_array) {
         const method = Reflect.get(target, key, receiver)
         return function(...args) {
-          method.apply(target, args)
-          report_changed(ids.length)
+          transaction(_ => {
+            method.apply(target, args)
+            report_changed(ids.length)
+          })
+          if (is_obdb) {
+            for (const id_key in ids) {
+              if (id_key !== 'length' && !(id_key in obdb_ids))
+                ws.send({
+                  type: 'array_add',
+                  field,
+                  data: {[id]: new_val},
+                })
+            }
+            for (const obdb_id_key in obdb_ids) {
+              if (!(id_key in obdb_ids))
+                ws.send({
+                  type: 'array_delete',
+                  field,
+                  data: {ids: id_key},
+                })
+            }
+          }
         }
       }
       return Reflect.get(target, key, receiver)
     },
 
     set(target, key, new_val, receiver) {
-      console.log('key,new_val', key,new_val)
+      console.log('new_val', JSON.stringify(new_val))
       if (target[key] === new_val) return target[key]
-      let id;
-      if(key === 'length') id = (length = key + uuid())
-      id = id || ids[key] || (ids[key] = key + uuid())
+      const id = ids[key] || (ids[key] = key + uuid())
+      const return_val = Reflect.set(target, key, observable(new_val), receiver)
       report_changed(id)
-      return Reflect.set(target, key, observable(new_val), receiver)
+      return return_val
     },
   })
 
 
-  for (const key in original) {
-    proxy[key]
+  if (!is_obdb) {
+    for (const key in original) {
+      proxy[key]
+    }
   }
   return proxy
 }

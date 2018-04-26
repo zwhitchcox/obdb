@@ -24,7 +24,6 @@ export class Obdb {
     })
   }
   onArraySubscribe(field, ws) {
-    console.log('subscribed')
     if (!store[field])
       this.get_data(field)
         .then(data => {
@@ -51,7 +50,7 @@ export class Obdb {
   }
 
   onArrayDelete(field, ids) {
-    ids.forEach(id => {
+    ([].concat(ids)).forEach(id => {
       if (store[field][id]) delete store[field][id]
     })
     this.write_data(field)

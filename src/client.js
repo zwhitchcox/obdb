@@ -1,32 +1,28 @@
 import uuid from 'uuid/v4'
 import WS from './ws'
 import { observable, transaction, untracked } from './obdb'
+import { mutating_array_methods } from './observable'
 
 
 const ws = new WS(`ws://${location.host}/obdb`)
 export const maps = []
 export const subscribed = {}
-export const store = observable({
-})
+export const store = observable({})
 export function subscribe(field, type = {}) {
   if (Array.isArray(field)) {
-    return Promise.all(field.map(field => this.subscribe(field)))
+    return this.subscribe(field)
   }
   if (subscribed[field]) return
   subscribed[field] = true
 
   if (Array.isArray(type)) {
-    untracked(() => {
-      store[field] = observable([])
-    })
+    store[field] = []
     ws.send({
       type: 'array_subscribe',
       field,
     })
   } else if (typeof type === 'object') {
-    untracked(() => {
-      store[field] = observable({})
-    })
+      store[field] = observable({}, field)
     ws.send({
       type: 'object_subscribe',
       field,
@@ -35,28 +31,52 @@ export function subscribe(field, type = {}) {
 }
 ws.on_msg(msg => {
   if (msg.type === 'array_subscription') {
-    store[msg.field] = mirrored_observable(msg.data, msg.field, [])
+    const {field, data} = msg
+    transaction(() => {
+      store[field] = observable({'__obdb': {data, type: [], field}})
+    })
   } else if (msg.type === 'object_subscription') {
     object_handle_subscription(msg.data, msg.field)
   }
 })
 
 
+const array_values_to_keys = {}
+const array_values_to_keys_count_hash = {}
 export function mirrored_observable(obj, field, type = {}) {
+  const ids = {}
+  let mutating;
   const is_array = Array.isArray(type)
-  let is_new;
-  let mapping;
-  let cur_key;
+  const key_map = array_values_to_keys[field]
+  const count_hash = array_values_to_keys_count_hash[field]
+  untracked(() => {
+    const update_array = _ => {
+      const count_hash_seen = Object.assign({}, count_hash)
+      type.forEach(val => {
+        key_map.get
+      })
+    }
+  })
   const proxy =  new Proxy(type, {
     get(target, key, receiver) {
       if ('__isMirroredProxy' === key) return true
+      const id = ids[key] || (ids[key] = key + uuid())
+      if(key in mutating_array_methods && is_array) {
+        const method = Reflect.get(target, key, receiver)
+        return function(...args) {
+          mutating = true
+          method.apply(target, args)
+          mutating = false
+          update_array()
+        }
+      }
       return Reflect.get(target, key, receiver)
     },
     set(target, key, new_val, receiver) {
-      const id = uuid()
+      if (key === 'length' || mutating) return Reflect.set(target, key, new_val, receiver)
       if (mapping) {
-        key_map[id] = cur_key
-      } else {
+        key_map[field][id] = cur_key
+      } else if (!key_map[field][id]){
         ws.send({
           type: 'array_add',
           field,
@@ -66,16 +86,6 @@ export function mirrored_observable(obj, field, type = {}) {
       return Reflect.set(target, key, new_val, receiver)
     }
   })
-  const key_map = {}
-  const ids = {}
-  mapping = true
-  if (is_array) {
-    for(const key in obj) {
-      cur_key = key
-      store[field].push(obj[key])
-    }
-  }
-  mapping = false
   return proxy
 }
 
