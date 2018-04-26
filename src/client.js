@@ -1,10 +1,9 @@
 import uuid from 'uuid/v4'
 import WS from './ws'
 import { observable, transaction, untracked } from './obdb'
-import { mutating_array_methods } from './observable'
 
 
-const ws = new WS(`ws://${location.host}/obdb`)
+export const ws = new WS(`ws://${location.host}/obdb`)
 export const maps = []
 export const subscribed = {}
 export const store = observable({})
@@ -16,7 +15,7 @@ export function subscribe(field, type = {}) {
   subscribed[field] = true
 
   if (Array.isArray(type)) {
-    store[field] = []
+    store[field] = Object.freeze([])
     ws.send({
       type: 'array_subscribe',
       field,
@@ -29,26 +28,21 @@ export function subscribe(field, type = {}) {
     })
   }
 }
+
 ws.on_msg(msg => {
   if (msg.type === 'array_subscription') {
     const {field, data} = msg
-    transaction(() => {
-      store[field] = observable({'__obdb': {data, type: [], field}})
-    })
+    store[field] = observable({__obdb: {field, data, type: 'array'}})
   } else if (msg.type === 'object_subscription') {
     object_handle_subscription(msg.data, msg.field)
   }
 })
 
 
-const array_values_to_keys = {}
-const array_values_to_keys_count_hash = {}
 export function mirrored_observable(obj, field, type = {}) {
   const ids = {}
   let mutating;
   const is_array = Array.isArray(type)
-  const key_map = array_values_to_keys[field]
-  const count_hash = array_values_to_keys_count_hash[field]
   untracked(() => {
     const update_array = _ => {
       const count_hash_seen = Object.assign({}, count_hash)
@@ -77,11 +71,6 @@ export function mirrored_observable(obj, field, type = {}) {
       if (mapping) {
         key_map[field][id] = cur_key
       } else if (!key_map[field][id]){
-        ws.send({
-          type: 'array_add',
-          field,
-          data: {[id]: new_val},
-        })
       }
       return Reflect.set(target, key, new_val, receiver)
     }

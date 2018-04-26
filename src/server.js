@@ -50,7 +50,7 @@ export class Obdb {
   }
 
   onArrayDelete(field, ids) {
-    ([].concat(ids)).forEach(id => {
+    ;(ids).forEach(id => {
       if (store[field][id]) delete store[field][id]
     })
     this.write_data(field)
