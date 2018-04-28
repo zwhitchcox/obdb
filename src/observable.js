@@ -67,22 +67,27 @@ export const mutating_array_methods = {
 export function observable(...args) {
   const original = args[0]
   const is_obdb = !!original.__obdb
-  const { field, data, type } = is_obdb ? original.__obdb : {}
+  const { field, data, type, store, obj_array, obdb_id } = is_obdb ? original.__obdb : {}
+  let {obdb_ids} = is_obdb ? original.__obdb : {}
   const is_array = Array.isArray(original) || is_obdb && type === 'array'
   if(quacksLikeADecorator(args) && !is_obdb) return observable_decorator(...args)
   if (original !== Object(original) || original.__isProxy)
     return original
-  const obdb_ids = []
+  obdb_ids = obdb_ids || []
   const ids = is_obdb ? Object.assign({}, original.__obdb.data) : {}
-  let array;
-  if (is_obdb && (array = [])) {
-    for (const key in data) {
-      obdb_ids.push(key)
-      array.push(data[key])
+  let array, obj;
+  if (is_obdb) {
+    if (is_array && (array = [])) {
+      for (const key in data) {
+        obdb_ids.push(key)
+        array.push(observable({ __obdb: {data: data[key], obdb_id: key, store, type: 'object', obj_array: array, obdb_ids, field}}))
+      }
+    } else {
+      obj = original.__obdb.data
     }
   }
 
-  const proxy = new Proxy(array || original, {
+  const proxy = new Proxy(array || obj || original, {
     get(target, key, receiver) {
       if(key === '__isProxy') return true
       let id;
@@ -106,6 +111,15 @@ export function observable(...args) {
       if (target[key] === new_val) return target[key]
       const id = ids[key] || (ids[key] = key + uuid())
       const return_val = Reflect.set(target, key, observable(new_val), receiver)
+      if (is_obdb && !is_array) {
+        untracked(() => {
+          ws.send({
+            type: 'array_update',
+            data: {[obdb_id]: obj_array[obdb_ids.indexOf(obdb_id)]},
+            field,
+          })
+        })
+      }
       report_changed(id)
       return return_val
     },

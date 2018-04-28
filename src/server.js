@@ -58,6 +58,7 @@ export class Obdb {
   }
 
   onArrayUpdate(field, data) {
+    console.log('data', data)
     for(const id in data) {
       store[field][id] = data[id]
     }

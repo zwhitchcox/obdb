@@ -32,7 +32,7 @@ export function subscribe(field, type = {}) {
 ws.on_msg(msg => {
   if (msg.type === 'array_subscription') {
     const {field, data} = msg
-    store[field] = observable({__obdb: {field, data, type: 'array'}})
+    store[field] = observable({__obdb: {field, data, type: 'array', store}})
   } else if (msg.type === 'object_subscription') {
     object_handle_subscription(msg.data, msg.field)
   }
